@@ -41,7 +41,8 @@ data = double([red(:), green(:), blue(:)]);
 
 % TO-DO: Implement this as a for-loop (2,3,5)
 k = 2;
-%Prob_Map_k_2
+% Prob_Map_k_2
+% Plot_Map_2
 
 % From: Homework Prompt:
 % For example, for k=3, and 100 repetitions, the output should be 3 maps:
@@ -70,14 +71,22 @@ for i = 1:k_repeats
     % Run k-means
     [idx, C] = kmeans(data, k,'start', init_cond);
 
-    % Populate Probaility Matrix
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %              Probability Matrix                %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+    %
+    % Populate Probability Matrix
     % The k-prob matrix has dimensions rows x cols x k
-    % We populate it iterating through through k clusters
-    % and adding to each entry a value of 1/(k_repeats * k)
+    % We populate it when iterating through each k clusters
+    % and adding on each iteration a value of 1/(k_repeats * k)
+    % to the assigned cluster
+    %
     %   Notes: 
-    %    * 1= k_repeats (total testing times) * 1/k_repeats (each test)
+    %    * 1 = k_repeats (total testing times) * 1/k_repeats (each test)
     %    * The 1/k factor is aded to correct the fact that Matlab returns
-    %        the index of cluster and not a 0/1 value.
+    %        the index of cluster and not a 0 OR 1 value.
     %    * Clusters were all ready sorted at the inital conditions, before
     %        running kmeans,so Matlab is returning an already sorted result
     for j = 1:k 
@@ -87,16 +96,38 @@ for i = 1:k_repeats
 
 end
 
-% % Plots for debugging
-% subplot(2, 2, 1);
-% imshow(Image_A);
-% title('Original Color Image');
-% subplot(2, 2, 2);
-% imshow(red);
-% title('Red Image');
-% subplot(2, 2, 3);
-% imshow(green);
-% title('Green Image');
-% subplot(2, 2, 4);
-% imshow(blue);
-% title('Blue Image');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                    Plots                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+
+% Create a plot map based on the Probability Map
+Plot_Map = ones(rows,cols);
+
+% Plot_Map starts as a matrix of zeros (for cluster 1 as default)
+% For each subsequent cluster, 
+%   if (prob map value of cluster j) > (prob map value of cluster j-1)
+%   then, update the entry of plot map to the corresponding cluster
+Plot_Map(Prob_Map(:,:,j) > Plot_Map) = j;
+for j = 2:k 
+        Plot_Map(Prob_Map(:,:,(j)) > Prob_Map(:,:,(j-1))) = j;
+end
+
+
+% Analysis of inputs for debugging
+figure(1)
+subplot(2, 2, 1);
+imshow(Image_A);
+title('Original Color Image');
+subplot(2, 2, 2);
+imshow(red);
+title('Red Image');
+subplot(2, 2, 3);
+imshow(green);
+title('Green Image');
+subplot(2, 2, 4);
+imshow(blue);
+title('Blue Image');
+
+% Plotting of clusters and results
+figure(2)
+imshow(Plot_Map);
