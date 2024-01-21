@@ -6,15 +6,22 @@ clc;
 % https://github.com/fede3alvarez/ECE510_Biometrics
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%          Parameters of interest                %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+k_values = [2 3 5]; % Array with the numbers of k-clusters to test
+k_repeats = 100;    % # of repeat of the kmeans for each k cluster value
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %        Read Image (*.jpg) and massage it       %
 %             to make matlab happy...            %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%/home/fico/Repos/ECE510_Biometrics/HW_2/Images/00_Hand.jpg\
+%/home/fico/Repos/ECE510_Biometrics/HW_2/Images/00B_Hand.jpg\
 
 % Note: jpeg images are read directly as RGB  matrices
 %    https://www.mathworks.com/matlabcentral/answers/23119-jpg-to-rgb-image
-[Image_A, Map_A] = imread('00_Hand.jpg');
+[Image_A, Map_A] = imread('00B_Hand.jpg');
 Image = double(Image_A);
 
 % Separete data in colors
@@ -34,30 +41,52 @@ data = double([red(:), green(:), blue(:)]);
 
 % TO-DO: Implement this as a for-loop (2,3,5)
 k = 2;
+%Prob_Map_k_2
 
-% Setting random k initial conditions
-init_cond = []
+% From: Homework Prompt:
+% For example, for k=3, and 100 repetitions, the output should be 3 maps:
+%       P(x belongs to cluster i) | {Rx,Gx,Bx} ), for i={1,2,3} 
+%       Note: ({Rx,Gx,Bx} are the chromatic values of x). 
+%
+% Desing: This will be implement as k-probability maps initialized to zero
+%         The k-prob matrix will have dimensions rows x cols x k
+%         Each time a pixel is assigned to a cluster, the corresponding
+%         map entry will be increased by 1/k_repeats
+Prob_Map = zeros(rows,cols,k);
 
-for i = 1:k 
-    r = randi(size(data,1),1);
-    init_cond = [init_cond; data(r,:)];
+%Repeat this for 100
+for i = 1:k_repeats 
+
+    % Setting random k initial conditions
+    init_cond = [];
+    for j = 1:k 
+        r = randi(size(data,1),1);
+        init_cond = [init_cond; data(r,:)];
+    end
+
+    % Sort clusters based on Red, and the Green values (Higher 1st / Top)
+    init_cond = sortrows(init_cond,'descend');
+
+    % Run k-means
+    [idx, C] = kmeans(data, k,'start', init_cond);
+
+    % Populate Probaility Matrix
+    % The k-prob matrix has dimensions rows x cols x k
+    % We populate it iterating through through k clusters
+    % and adding to each entry a value of 1/(k_repeats * k)
+    %   Notes: 
+    %    * 1= k_repeats (total testing times) * 1/k_repeats (each test)
+    %    * The 1/k factor is aded to correct the fact that Matlab returns
+    %        the index of cluster and not a 0/1 value.
+    %    * Clusters were all ready sorted at the inital conditions, before
+    %        running kmeans,so Matlab is returning an already sorted result
+    for j = 1:k 
+        Prob_Map(:,:,j) = Prob_Map(:,:,j)...
+                        +((1/(j*k_repeats)) * reshape(idx == j,rows,cols));
+    end
+
 end
 
-[Hand, Background] = kmeans(data, k,'start', init_cond)
-
-%indexes = kmeans(data, 2);
-%class1 = reshape(indexes == 1, rows, cols);
-
-
-
-% Init_Values = [r0, g0, b0;r1, g1, b1]
-% Init_Values = [r0, g0, b0;r1, g1, b1;r2, g2, b2]
-% [Hand, Background] = kmeans(Image, 3,'start', Init_Values)
-% % WORKING:
-% %[Hand, Background] = kmeans(Image(:,:,1), 2)
-
-%class1 = reshape(indexes == 1, rows, cols);
-% 
 % % Plots for debugging
 % subplot(2, 2, 1);
 % imshow(Image_A);
