@@ -12,6 +12,14 @@ clc;
 k_values = [2 3 5]; % Array with the numbers of k-clusters to test
 k_repeats = 100;    % # of repeat of the kmeans for each k cluster value
 
+color_map = [255 0   0    % Red
+             0   255 0    % Blue
+             0   0   255  % Green
+             0   0   0    % Black
+             255 255 255  % White
+             255 0   255  % Pink
+             255 255 0];  % Brown
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %        Read Image (*.jpg) and massage it       %
 %             to make matlab happy...            %
@@ -55,6 +63,7 @@ k = 2;
 %         map entry will be increased by 1/k_repeats
 Prob_Map = zeros(rows,cols,k);
 
+
 %Repeat this for 100
 for i = 1:k_repeats 
 
@@ -92,6 +101,7 @@ for i = 1:k_repeats
     for j = 1:k 
         Prob_Map(:,:,j) = Prob_Map(:,:,j)...
                         +((1/(j*k_repeats)) * reshape(idx == j,rows,cols));
+        
     end
 
 end
@@ -99,20 +109,42 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                    Plots                       %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+%Plot_Map = zeros(rows,cols,3);
+max_prob = max(Prob_Map,[],3);
 
-% Create a plot map based on the Probability Map
-Plot_Map = ones(rows,cols);
+red_cluster_results = zeros(rows,cols);
+blue_cluster_results = zeros(rows,cols);
+green_cluster_results = zeros(rows,cols);
 
-% Plot_Map starts as a matrix of zeros (for cluster 1 as default)
-% For each subsequent cluster, 
-%   if (prob map value of cluster j) > (prob map value of cluster j-1)
-%   then, update the entry of plot map to the corresponding cluster
-Plot_Map(Prob_Map(:,:,j) > Plot_Map) = j;
-for j = 2:k 
-        Plot_Map(Prob_Map(:,:,(j)) > Prob_Map(:,:,(j-1))) = j;
+for j = 1:k
+    idx = (Prob_Map(:,:,j) == max_prob);
+    
+    red_cluster_results = red_cluster_results + idx*color_map(j,1);
+    blue_cluster_results = blue_cluster_results + idx*color_map(j,2);
+    green_cluster_results = green_cluster_results + idx*color_map(j,3);
 end
 
+Plot_Map = cat(3, ...
+           red_cluster_results,...
+           blue_cluster_results,...
+           green_cluster_results);
 
+% % For each subsequent cluster, 
+% %   if (prob map value of cluster j) > (prob map value of cluster j-1)
+% %   then, update the entry of plot map to the corresponding cluster
+% for j = 2:k
+% 
+%     % Chck which cluster has higher probability
+%     winning_cluster = Prob_Map(:,:,j) > Prob_Map(:,:,(j-1));
+% 
+%     % Update colors in Plot_Map accordengly
+%     for l = 1:3
+%         Helper_Plot = ones(rows,cols) * Color_Map(j,l);
+%         Plot_Map(Prob_Map(:,:,j) > Prob_Map(:,:,(j-1)),l) = Color_Map(j,l);
+%     end
+% end
+% 
+% 
 % Analysis of inputs for debugging
 figure(1)
 subplot(2, 2, 1);
@@ -130,4 +162,4 @@ title('Blue Image');
 
 % Plotting of clusters and results
 figure(2)
-imshow(Plot_Map);
+image(Plot_Map);
