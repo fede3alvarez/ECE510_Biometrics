@@ -10,13 +10,13 @@ clc;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 k_values = [2 3 5];       % Array with the # of k-clusters to test
-k_repeats = 100;          % # of times to repeat kmeans 
+k_repeats = 100;          % # of times to repeat kmeans
+prob_limit = 0;
 
 color_map = [255 0   0    % Red
              0   255 0    % Blue
              0   0   255  % Green
              0   0   0    % Black
-             255 255 255  % White
              255 0   255  % Pink
              255 255 0];  % Brown
 
@@ -29,10 +29,11 @@ p = 1;                    % To keep track / initialize of plots / figures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Images
-Available_images = ['00_Hand.jpg'
-                    '01_Hand.jpg'
-                    '02_Hand.jpg'
-                    '03_Hand.jpg'];
+Available_images = [%'Hand00.jpg'
+                    'Hand01.jpg'
+                    %'Hand02.jpg'
+                    'Hand03.jpg'
+                    ];
 
 for m = 1:size(Available_images,1)
     current_image = Available_images(m,:);
@@ -116,89 +117,73 @@ for m = 1:size(Available_images,1)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %                    Plots                       %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
-        % Find the maximun probability for each cluster
-        max_prob = max(Prob_Map,[],3);
+
+        % Remove any probability below ther probability limnit
+        Prob_Map(Prob_Map<prob_limit) = 0;            
+
         
-        red_cluster_results = zeros(rows,cols);
-        blue_cluster_results = zeros(rows,cols);
-        green_cluster_results = zeros(rows,cols);
-        
-        for j = 1:k
-            idx = (Prob_Map(:,:,j) == max_prob);
-            
-            red_cluster_results = red_cluster_results + idx*color_map(j,1);
-            green_cluster_results = green_cluster_results + idx*color_map(j,2);
-            blue_cluster_results = blue_cluster_results + idx*color_map(j,3);
-        end
-        
-        Plot_Map = cat(3, ...
-                   red_cluster_results,...
-                   green_cluster_results,...
-                   blue_cluster_results);
-    
         % Save data - need to find a more elegant way to do this
         if k == 2
             Prob_Map_k_2 = Prob_Map;
-            Plot_Map_2 = Plot_Map;
-
+        
             % Plotting of Probability Map
             figure(p)
-            subplot(2, 2, 1);
-            imshow(Image_A);
-            title(strcat('Original Image - ',current_image));
-            subplot(2, 2, 2);
-            HeatMap(Prob_Map(:,:,1));
-            title('k=2 - Cluster 1 Probability');
-            subplot(2, 2, 3);
-            HeatMap( Prob_Map(:,:,2));
-            title('k=2 - Cluster 2 Probability');
+            h = heatmap(Prob_Map(:,:,1),'ColorLimits',[0 1]);
+            h.Title = strcat('k=2 - Cluster 1 Prob - ',current_image);
+            p = p + 1;
+            
+            figure(p)
+            h = heatmap(Prob_Map(:,:,2),'ColorLimits',[0 1]);
+            h.Title = strcat('k=2 - Cluster 2 Prob - ',current_image);
             p = p + 1;
         
         elseif k == 3
             Prob_Map_k_3 = Prob_Map;
-            Plot_Map_3 = Plot_Map;
-
+        
             % Plotting of Probability Map
             figure(p)
-            subplot(2, 2, 1);
-            imshow(Image_A);
-            title(strcat('Original Image - ',current_image));
-            subplot(2, 2, 2);
-            HeatMap(Prob_Map(:,:,1));
-            title('k=3 - Cluster 1 Probability');
-            subplot(2, 2, 3);
-            HeatMap(Prob_Map(:,:,2));
-            title('k=3 - Cluster 2 Probability');
-            subplot(2, 2, 4);
-            HeatMap(Prob_Map(:,:,3));
-            title('k=3 - Cluster 3 Probability');
+            h = heatmap(Prob_Map(:,:,1),'ColorLimits',[0 1]);
+            h.Title = strcat('k=3 - Cluster 1 Prob - ',current_image);
+            p = p + 1;
+            
+            figure(p)
+            h = heatmap(Prob_Map(:,:,2),'ColorLimits',[0 1]);
+            h.Title = strcat('k=3 - Cluster 2 Prob - ',current_image);
+            p = p + 1;
+            
+            figure(p)
+            h = heatmap(Prob_Map(:,:,3),'ColorLimits',[0 1]);
+            h.Title = strcat('k=3 - Cluster 3 Prob - ',current_image);
             p = p + 1;
 
         elseif k == 5
             
             Prob_Map_k_5 = Prob_Map;
-            Plot_Map_5 = Plot_Map;
-
+       
             % Plotting of Probability Map
             figure(p)
-            subplot(2, 3, 1);
-            imshow(Image_A);
-            title(strcat('Original Image - ',current_image));
-            subplot(2, 3, 2);
-            HeatMap(Prob_Map(:,:,1));
-            title('k=5 - Cluster 1 Probability');
-            subplot(2, 3, 3);
-            HeatMap(Prob_Map(:,:,2));
-            title('k=5 - Cluster 2 Probability');
-            subplot(2, 3, 4);
-            HeatMap(Prob_Map(:,:,3));
-            title('k=5 - Cluster 3 Probability');
-            subplot(2, 3, 5);
-            HeatMap(Prob_Map(:,:,4));
-            title('k=5 - Cluster 4 Probability');
-            subplot(2, 3, 6);
-            HeatMap(Prob_Map(:,:,5));
-            title('k=5 - Cluster 5 Probability');
+            h = heatmap(Prob_Map(:,:,1),'ColorLimits',[0 1]);
+            h.Title = strcat('k=5 - Cluster 1 Prob - ',current_image);
+            p = p + 1;
+            
+            figure(p)
+            h = heatmap(Prob_Map(:,:,2),'ColorLimits',[0 1]);
+            h.Title = strcat('k=5 - Cluster 2 Prob - ',current_image);
+            p = p + 1;
+            
+            figure(p)
+            h = heatmap(Prob_Map(:,:,3),'ColorLimits',[0 1]);
+            h.Title = strcat('k=5 - Cluster 3 Prob - ',current_image);
+            p = p + 1;
+            
+            figure(p)
+            h = heatmap(Prob_Map(:,:,4),'ColorLimits',[0 1]);
+            h.Title = strcat('k=5 - Cluster 4 Prob - ',current_image);
+            p = p + 1;
+            
+            figure(p)
+            h = heatmap(Prob_Map(:,:,5),'ColorLimits',[0 1]);
+            h.Title = strcat('k=5 - Cluster 5 Prob',current_image);
             p = p + 1;
         
         end
@@ -221,19 +206,19 @@ for m = 1:size(Available_images,1)
     p = p + 1;
     
     % Plotting of clusters and results
-    figure(p)
-    subplot(2, 2, 1);
-    imshow(Image_A);
-    title(strcat('Original Image - ',current_image));
-    subplot(2, 2, 2);
-    image(Plot_Map_2);
-    title('2 Clusters');
-    subplot(2, 2, 3);
-    image(Plot_Map_3);
-    title('3 Clusters');
-    subplot(2, 2, 4);
-    image(Plot_Map_5);
-    title('5 Clusters');
-    p = p + 1;
+    % figure(p)
+    % subplot(2, 2, 1);
+    % imshow(Image_A);
+    % title(strcat('Original Image - ',current_image));
+    % subplot(2, 2, 2);
+    % image(Plot_Map_2);
+    % title('2 Clusters');
+    % subplot(2, 2, 3);
+    % image(Plot_Map_3);
+    % title('3 Clusters');
+    % subplot(2, 2, 4);
+    % image(Plot_Map_5);
+    % title('5 Clusters');
+    % p = p + 1;
 
 end
