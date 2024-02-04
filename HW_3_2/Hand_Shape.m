@@ -6,29 +6,6 @@ clc;
 % https://github.com/fede3alvarez/ECE510_Biometrics
 % Homework 3 - Hand Shapes
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%          Parameters of interest                %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-k_values = [2 3 5];       % Array with the # of k-clusters to test
-k_repeats = 100;          % # of times to repeat kmeans
-prob_limit = 0;
-
-color_map = [255 0   0    % Red
-             0   255 0    % Blue
-             0   0   255  % Green
-             0   0   0    % Black
-             255 0   255  % Pink
-             255 255 0];  % Brown
-
-p = 1;                    % To keep track / initialize of plots / figures
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%        Read Image (*.jpg) and massage it       %
-%             to make matlab happy...            %
-%                 also plot it! 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 % Images
 Available_images = ['HandShape00.jpg'
                     ];
@@ -40,7 +17,7 @@ for m = 1:size(Available_images,1)
     % Convert to Grayscale
     Gray_Map_A = rgb2gray(Image_A);
     %imshow(Gray_Map_A);
-
+    Gray_Map_A = imgaussfilt(Gray_Map_A,5);
     %Click on Points
     figure(1)
     imshow(Gray_Map_A);
@@ -137,14 +114,32 @@ for m = 1:size(Available_images,1)
             % Specify how wide of an area the sweep should do
             sweep_range = dist*0.67; 
 
-            % Find the end points of the perpendicular line with length Clen*2
-            sweep_dist = [(sweep_range*sqrt(1/(1+perpSlope^2))),... 
-                          (perpSlope*sweep_range*sqrt(1/(1+perpSlope^2)))];
+            % If the feature is a finger
+            if feature <= 10
 
-            start_pt = mid_pt - sweep_dist;
-            end_pt = mid_pt + sweep_dist;
-            pt_plot = [start_pt; end_pt];
+                % Find the end points of the perpendicular line with length Clen*2
+                sweep_dist = [(sweep_range*sqrt(1/(1+perpSlope^2))),... 
+                              (perpSlope*sweep_range*sqrt(1/(1+perpSlope^2)))];
+                    
+                start_pt = mid_pt - sweep_dist;
+                end_pt = mid_pt + sweep_dist;
             
+            % If the feature is a knucle
+            else
+
+                % Find the end points of the perpendicular line with length Clen*2
+                sweep_dist = [(dist*sqrt(1/(1+slope^2))),... 
+                              (slope*dist*sqrt(1/(1+slope^2)))];
+
+
+                mid_pt = (pt_1(:) + pt_2(:)).'/2
+                start_pt = mid_pt - sweep_dist;
+                end_pt = mid_pt + sweep_dist;
+
+            end
+
+            pt_plot = [start_pt; end_pt];
+            pixel_data = improfile(Gray_Map_A,pt_plot(:,1),pt_plot(:,2),dist);
 
             curr_metric = 0;
             feature_metric = [feature_metric; curr_metric];
@@ -159,3 +154,12 @@ for m = 1:size(Available_images,1)
         metrics = [metrics, feature_metric];
     end
 end    
+
+t=1:1:size(pixel_data,1);
+TF = islocalmax(pixel_data);
+figure(2)
+plot(pixel_data)
+hold on
+plot(t(TF),pixel_data(TF),'r*')
+d=diff(pixel_data)
+hold on
