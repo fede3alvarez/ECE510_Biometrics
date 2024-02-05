@@ -7,7 +7,7 @@ clc;
 % Homework 3 - Hand Shapes
 
 % Images
-Available_images = [ 'HandImage01.jpeg'
+Available_images = ['HandImage01.jpeg'
                     'HandImage02.jpeg'
                     'HandImage03.jpeg'
                     'HandImage04.jpeg'
@@ -31,6 +31,9 @@ Feature_Map = ['Pinky, Top    '
 
 f_figure = 1;
 
+% For each point find the Feature Metric / Finger Thickness
+feature_metric = [];
+
 for m = 1:size(Available_images,1)
     current_image = Available_images(m,:);
     [Image_A, Map_A] = imread(current_image);
@@ -39,7 +42,7 @@ for m = 1:size(Available_images,1)
     Gray_Map_A = rgb2gray(Image_A);
     
     % Filter Image
-    %Gray_Map_A = imgaussfilt(Gray_Map_A,2);
+    Gray_Map_A = imgaussfilt(Gray_Map_A,5);
     
     % Plot Image
     figure(f_figure)
@@ -119,9 +122,6 @@ for m = 1:size(Available_images,1)
         % Slope of perpendiculare line
         pSlope = -1 / slope;
 
-        % For each point find the Feature Metric / Finger Thickness
-        feature_metric = [];
-
         pts = [pt_1; pt_2];
 
         for i = 1:2
@@ -179,10 +179,10 @@ for m = 1:size(Available_images,1)
             pt_plot = [start_pt; end_pt];
             pixel_line = improfile(Gray_Map_A,pt_plot(:,1),pt_plot(:,2),dist);
             d_pixel = diff(pixel_line);
-            [min_d_pixel_val, min_d_pixel_idx] = min(d_pixel); 
-            [max_d_pixel_val, max_d_pixel_idx] = max(d_pixel); 
+            [min_val, min_idx] = min(d_pixel); 
+            [max_val, max_idx] = max(d_pixel); 
 
-            curr_metric = abs(max_d_pixel_val - min_d_pixel_val);
+            curr_metric = abs(max_idx - min_idx);
             feature_metric = [feature_metric; curr_metric];
 
             % If the feature is a finger
@@ -190,8 +190,8 @@ for m = 1:size(Available_images,1)
 
                 % Find the end points of the perpendicular line 
                 %   with length sweep_range
-                metric_dist = [(curr_metric/2)*sqrt(1/(1+pSlope^2)),... 
-                              pSlope*(curr_metric/2)*sqrt(1/(1+pSlope^2))];
+                metric_dist = [(curr_metric)*sqrt(1/(1+pSlope^2)),... 
+                              pSlope*(curr_metric)*sqrt(1/(1+pSlope^2))];
 
                 % Set Start & End points to sweep pixel data
                 metric_start = mid_pt - metric_dist;
@@ -243,20 +243,18 @@ for m = 1:size(Available_images,1)
             hold on
             plot(d_pixel,'g+:')
             hold on
-            plot(min_d_pixel_idx,d_pixel(min_d_pixel_idx),'rd')
+            plot(min_idx,d_pixel(min_idx),'rd')
             hold on
-            plot(max_d_pixel_idx,d_pixel(max_d_pixel_idx),'rd')
+            plot(max_idx,d_pixel(max_idx),'rd')
             grid on
             subplot_title = strcat(current_image(10:11),', ',...
-                            Feature_Map(feature,:))
+                            Feature_Map(feature,:));
             title(subplot_title);
             f_subplot = f_subplot+1;
 
 
         end     % All points in a feature - Iteration Done
 
-        % Update metrics matrix
-        metrics = [metrics, feature_metric];
     
         
     hold on
@@ -265,11 +263,5 @@ for m = 1:size(Available_images,1)
     f_figure = f_figure + 2;
 end         % All images Iteration
 
-% t=1:1:size(pixel_data,1);
-% TF = islocalmax(pixel_data);
-% figure(2)
-% plot(pixel_data)
-% hold on
-% plot(t(TF),pixel_data(TF),'r*')
-% d=diff(pixel_data)
-% hold on
+
+reshape(feature_metric,6,10);
