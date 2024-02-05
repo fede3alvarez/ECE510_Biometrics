@@ -15,18 +15,18 @@ Available_images = [ 'HandImage01.jpeg'
                     %'HandImage00.jpeg'
                     ];
 
-Feature_Map = ['Pinky, Top Selection'
-               'Pinky, Lower Selection'
-               'Ring, Top Selection'
-               'Ring, Lower Selection'
-               'Middle, Top Selection'
-               'Middle, Lower Selection'
-               'Index, Top Selection'
-               'Index, Lower Selection'
-               'Thumb, Top Selection'
-               'Thumb, Lower Selection'
-               'Knuckle, Right Selection'
-               'Knuckle, Left Selection'
+Feature_Map = ['Pinky, Top    '
+               'Pinky, Lower  '
+               'Ring, Top     '
+               'Ring, Lower   '
+               'Middle, Top   '
+               'Middle, Lower '
+               'Index, Top    '
+               'Index, Lower  '
+               'Thumb, Top    '
+               'Thumb, Lower  '
+               'Knuckle, Right'
+               'Knuckle, Left '
                 ];
 
 f_figure = 1;
@@ -247,8 +247,9 @@ for m = 1:size(Available_images,1)
             hold on
             plot(max_d_pixel_idx,d_pixel(max_d_pixel_idx),'rd')
             grid on
-            subplot_title = strcat(current_image(1:11),' - ',);
-            title(current_image);
+            subplot_title = strcat(current_image(10:11),', ',...
+                            Feature_Map(feature,:))
+            title(subplot_title);
             f_subplot = f_subplot+1;
 
 
