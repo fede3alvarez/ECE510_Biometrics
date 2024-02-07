@@ -8,10 +8,10 @@ clc;
 
 % Images
 Available_images = ['HandImage01.jpeg'
-                    'HandImage02.jpeg'
-                    'HandImage03.jpeg'
-                    'HandImage04.jpeg'
-                    'HandImage05.jpeg'
+                    % 'HandImage02.jpeg'
+                    % 'HandImage03.jpeg'
+                    % 'HandImage04.jpeg'
+                    % 'HandImage05.jpeg'
                     %'HandImage00.jpeg'
                     ];
 
@@ -42,7 +42,7 @@ for m = 1:size(Available_images,1)
     Gray_Map_A = rgb2gray(Image_A);
     
     % Filter Image
-    Gray_Map_A = imgaussfilt(Gray_Map_A,5);
+    %Gray_Map_A = imgaussfilt(Gray_Map_A,6);
     
     % Plot Image
     figure(f_figure)
@@ -180,18 +180,27 @@ for m = 1:size(Available_images,1)
             pixel_line = improfile(Gray_Map_A,pt_plot(:,1),pt_plot(:,2),dist);
             d_pixel = diff(pixel_line);
             [min_val, min_idx] = min(d_pixel); 
-            [max_val, max_idx] = max(d_pixel); 
+            [max_val, max_idx] = max(d_pixel);
+            
+            d2_pixel = diff(d_pixel);
+            [min2_val, min2_idx] = min(d2_pixel); 
+            [max2_val, max2_idx] = max(d2_pixel);
 
-            curr_metric = abs(max_idx - min_idx);
+            curr_metric = pdist([max_idx; min_idx],'euclidean');
             feature_metric = [feature_metric; curr_metric];
+
+            figure(f_figure)
+            hold on
+            plot(pts(:,1),pts(:,2),'*b')
+            hold on
 
             % If the feature is a finger
             if feature <= 10
 
                 % Find the end points of the perpendicular line 
                 %   with length sweep_range
-                metric_dist = [(curr_metric)*sqrt(1/(1+pSlope^2)),... 
-                              pSlope*(curr_metric)*sqrt(1/(1+pSlope^2))];
+                metric_dist = [(curr_metric/2)*sqrt(1/(1+pSlope^2)),... 
+                              pSlope*(curr_metric/2)*sqrt(1/(1+pSlope^2))];
 
                 % Set Start & End points to sweep pixel data
                 metric_start = mid_pt - metric_dist;
@@ -212,6 +221,8 @@ for m = 1:size(Available_images,1)
                 %       separetely (this will result in calculating the
                 %       same distance / metric twice).
                 mid_pt = (pt_1(:) + pt_2(:)).'/2;
+                pt_1 = mid_pt;
+                pt_2 = mid_pt;
                 metric_start = mid_pt - metric_dist;
                 metric_end = mid_pt + metric_dist;
 
@@ -230,6 +241,9 @@ for m = 1:size(Available_images,1)
             hold on
             plot(metric_pts(:,1),metric_pts(:,2),'*r:')
             hold on
+            legend('Points Selected',...
+                   'Area to be sweep / analyzed',...
+                   'Calculated Feature Metric')
 
 
             % For each feature in a separete figure, plot
@@ -239,16 +253,27 @@ for m = 1:size(Available_images,1)
             figure((f_figure+1))
             hold on
             subplot(6,2,f_subplot)
+            yyaxis left
             plot(pixel_line,'b*:')
             hold on
+            yyaxis right
             plot(d_pixel,'g+:')
             hold on
             plot(min_idx,d_pixel(min_idx),'rd')
             hold on
             plot(max_idx,d_pixel(max_idx),'rd')
+            hold on
+            plot(d2_pixel,'msquare:')
+            hold on
+            plot(min2_idx,d2_pixel(min2_idx),'ko')
+            hold on
+            plot(max2_idx,d2_pixel(max2_idx),'ko')
             grid on
+            legend('Area Scanned',...
+                   'Derivative',...
+                   'Min/Max Der Value')
             subplot_title = strcat(current_image(10:11),', ',...
-                            Feature_Map(feature,:));
+                            Feature_Map(f_subplot,:));
             title(subplot_title);
             f_subplot = f_subplot+1;
 
@@ -263,5 +288,6 @@ for m = 1:size(Available_images,1)
     f_figure = f_figure + 2;
 end         % All images Iteration
 
+reshape(feature_metric,6,2);
 
-reshape(feature_metric,6,10);
+%reshape(feature_metric,6,10);
