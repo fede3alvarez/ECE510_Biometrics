@@ -8,10 +8,10 @@ clc;
 
 % Images
 Available_images = ['HandImage01.jpeg'
-                    % 'HandImage02.jpeg'
-                    % 'HandImage03.jpeg'
-                    % 'HandImage04.jpeg'
-                    % 'HandImage05.jpeg'
+                    'HandImage02.jpeg'
+                    'HandImage03.jpeg'
+                    'HandImage04.jpeg'
+                    'HandImage05.jpeg'
                     %'HandImage00.jpeg'
                     ];
 
@@ -108,24 +108,25 @@ for m = 1:size(Available_images,1)
 
 
         % Find Feature Vector going through both feature points
-        pt_1 = points(feature,:);
-        pt_2 = points(feature+1,:);
+        user_selected_pt_1 = points(feature,:);
+        user_selected_pt_2 = points(feature+1,:);
 
         %% Do the math
         % Get slope and y int of line AB
-        slope = (pt_2(2)-pt_1(2)) / (pt_2(1)-pt_1(1)); 
-        yint = pt_2(2) - slope*pt_2(1); 
+        slope = (user_selected_pt_2(2)-user_selected_pt_1(2)) / ...
+                (user_selected_pt_2(1)-user_selected_pt_1(1)); 
+        yint = user_selected_pt_2(2) - slope*user_selected_pt_2(1); 
 
         % Find distance between both feature points
-        dist = pdist([pt_1; pt_2],'euclidean');
+        dist = pdist([user_selected_pt_1;user_selected_pt_2],'euclidean');
 
         % Slope of perpendiculare line
         pSlope = -1 / slope;
 
-        pts = [pt_1; pt_2];
+        user_selected_pts = [user_selected_pt_1; user_selected_pt_2];
 
         for i = 1:2
-            mid_pt = pts(i,:);
+            mid_pt = user_selected_pts(i,:);
 
             % Specify how wide of an area the sweep should do
             % There is nothing special about this ratio - trial and error
@@ -133,6 +134,10 @@ for m = 1:size(Available_images,1)
 
             % If the feature is a finger
             if feature <= 10
+
+                % Specify how wide of an area the sweep should do
+                % There is nothing special about this ratio - trial and error
+                sweep_range = dist*0.67; 
 
                 % Find the end points of the perpendicular line 
                 %   with length sweep_range
@@ -146,9 +151,13 @@ for m = 1:size(Available_images,1)
             % If the feature is a knucle
             else
 
-                % Find the end points of the perpendicular line with length Clen*2
-                sweep_dist = [(dist*sqrt(1/(1+slope^2))),... 
-                              (slope*dist*sqrt(1/(1+slope^2)))];
+                % Specify how wide of an area the sweep should do
+                % There is nothing special about this ratio - trial and error
+                sweep_range = dist*1.4; 
+
+                % Find the end points of the perpendicular line 
+                sweep_dist = [(sweep_range*sqrt(1/(1+slope^2))),... 
+                              (slope*sweep_range*sqrt(1/(1+slope^2)))];
 
                 % If the feature is a knuckle, 
                 %   Plot / extend the sweep on the line marked by the 2
@@ -157,7 +166,8 @@ for m = 1:size(Available_images,1)
                 %       the feature points) instead than from each point
                 %       separetely (this will result in calculating the
                 %       same distance / metric twice).
-                mid_pt = (pt_1(:) + pt_2(:)).'/2;
+                mid_pt = (user_selected_pt_1(:) +...
+                          user_selected_pt_2(:)).'/2;
                 start_pt = mid_pt - sweep_dist;
                 end_pt = mid_pt + sweep_dist;
 
@@ -176,8 +186,10 @@ for m = 1:size(Available_images,1)
             %       calculating its derivative. Based on the derivative,
             %       the feature metrics will be decided.
 
-            pt_plot = [start_pt; end_pt];
-            pixel_line = improfile(Gray_Map_A,pt_plot(:,1),pt_plot(:,2),dist);
+            sweep_pts = [start_pt; end_pt];
+            pixel_line = improfile(Gray_Map_A,...
+                                   sweep_pts(:,1),...
+                                   sweep_pts(:,2));
             d_pixel = diff(pixel_line);
             [min_val, min_idx] = min(d_pixel); 
             [max_val, max_idx] = max(d_pixel);
@@ -189,9 +201,12 @@ for m = 1:size(Available_images,1)
             curr_metric = pdist([max_idx; min_idx],'euclidean');
             feature_metric = [feature_metric; curr_metric];
 
+            f_plot = [min_idx, pixel_line(min_idx)
+                      max_idx, pixel_line(min_idx)];
+
             figure(f_figure)
             hold on
-            plot(pts(:,1),pts(:,2),'*b')
+            plot(user_selected_pts(:,1),user_selected_pts(:,2),'*b')
             hold on
 
             % If the feature is a finger
@@ -209,7 +224,7 @@ for m = 1:size(Available_images,1)
             % If the feature is a knucle
             else
 
-                % Find the end points of the perpendicular line with length Clen*2
+                % Find the end points of the perpendicular line 
                 metric_dist = [((curr_metric/2)*sqrt(1/(1+slope^2))),... 
                               (slope*(curr_metric/2)*sqrt(1/(1+slope^2)))];
 
@@ -220,9 +235,10 @@ for m = 1:size(Available_images,1)
                 %       the feature points) instead than from each point
                 %       separetely (this will result in calculating the
                 %       same distance / metric twice).
-                mid_pt = (pt_1(:) + pt_2(:)).'/2;
-                pt_1 = mid_pt;
-                pt_2 = mid_pt;
+                mid_pt = (user_selected_pt_1(:) + ...
+                          user_selected_pt_2(:)).'/2;
+                user_selected_pt_1 = mid_pt;
+                user_selected_pt_2 = mid_pt;
                 metric_start = mid_pt - metric_dist;
                 metric_end = mid_pt + metric_dist;
 
@@ -235,11 +251,17 @@ for m = 1:size(Available_images,1)
             %   AND calculate feature metric
             figure(f_figure)
             hold on
-            plot(pts(:,1),pts(:,2),'*b')
+            plot(user_selected_pts(:,1),user_selected_pts(:,2),'*w')
             hold on
-            plot(pt_plot(:,1),pt_plot(:,2),'--*b')
+            plot(sweep_pts(:,1),sweep_pts(:,2),'--*b')
             hold on
-            plot(metric_pts(:,1),metric_pts(:,2),'*r:')
+            plot(metric_start(:,1),metric_start(:,2),'dr:')
+            hold on
+            plot(metric_end(:,1),metric_end(:,2),'r:square')
+            hold on
+            plot(metric_pts(:,1),metric_pts(:,2),'r:')
+            hold on
+            plot(mid_pt(:,1),mid_pt(:,2),'g:o')
             hold on
             legend('Points Selected',...
                    'Area to be sweep / analyzed',...
@@ -256,20 +278,23 @@ for m = 1:size(Available_images,1)
             yyaxis left
             plot(pixel_line,'b*:')
             hold on
+            plot(f_plot(:,1),f_plot(:,2),'msquare-','LineWidth',3)
+            hold on
             yyaxis right
             plot(d_pixel,'g+:')
             hold on
-            plot(min_idx,d_pixel(min_idx),'rd')
+            plot(min_idx,d_pixel(min_idx),'rd','LineWidth',3)
             hold on
-            plot(max_idx,d_pixel(max_idx),'rd')
+            plot(max_idx,d_pixel(max_idx),'rd','LineWidth',3)
             hold on
-            plot(d2_pixel,'msquare:')
-            hold on
-            plot(min2_idx,d2_pixel(min2_idx),'ko')
-            hold on
-            plot(max2_idx,d2_pixel(max2_idx),'ko')
+            % plot(d2_pixel,'msquare:')
+            % hold on
+            % plot(min2_idx,d2_pixel(min2_idx),'ko')
+            % hold on
+            % plot(max2_idx,d2_pixel(max2_idx),'ko')
             grid on
             legend('Area Scanned',...
+                   'Calculated Feature Lenght',...
                    'Derivative',...
                    'Min/Max Der Value')
             subplot_title = strcat(current_image(10:11),', ',...
@@ -288,6 +313,6 @@ for m = 1:size(Available_images,1)
     f_figure = f_figure + 2;
 end         % All images Iteration
 
-reshape(feature_metric,6,2);
+%reshape(feature_metric,6,2);
 
 %reshape(feature_metric,6,10);
