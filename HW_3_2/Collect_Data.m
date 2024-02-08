@@ -15,9 +15,9 @@ clc;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Images
-Available_images = ['HandImage01.jpeg'
-                    'HandImage02.jpeg'
-                    'HandImage03.jpeg'
+Available_images = [%'HandImage01.jpeg'
+                    %'HandImage02.jpeg'
+                    %'HandImage03.jpeg'
                     'HandImage04.jpeg'
                     'HandImage05.jpeg'
                     %'HandImage00.jpeg'

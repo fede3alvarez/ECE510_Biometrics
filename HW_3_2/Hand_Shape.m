@@ -313,6 +313,31 @@ for m = 1:size(Available_images,1)
     f_figure = f_figure + 2;
 end         % All images Iteration
 
-%reshape(feature_metric,6,2);
 
-%reshape(feature_metric,6,10);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%              Pairwise comparison              %
+%            among the 5 hand images            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Re-arrange the metrics collects on a per image (cols) basis
+feature_matrix = reshape(feature_metric,12,5);
+
+% Create a Verification / Pairwase Comparison Matrix
+verif_matrix = zeros(5,5);
+
+% Fill each entry with the corresponding comparison
+for feature_to_compare = 1:size(Available_images,1)
+    for comparable = (feature_to_compare+1):size(Available_images,1)
+        
+        % Perform the pairwise euclidean comparison
+        verif_matrix(feature_to_compare,comparable) = ...
+             pdist(...
+                   [feature_matrix(:,feature_to_compare)';...
+                    feature_matrix(:,comparable)'],...
+                   'euclidean');
+
+    end % No more comaprables
+end % No more features to compare
+
+% Display the Matrix
+verif_matrix
