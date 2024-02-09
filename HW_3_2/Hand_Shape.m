@@ -12,7 +12,6 @@ Available_images = ['HandImage01.jpeg'
                     'HandImage03.jpeg'
                     'HandImage04.jpeg'
                     'HandImage05.jpeg'
-                    %'HandImage00.jpeg'
                     ];
 
 Feature_Map = ['Pinky, Top    '
@@ -204,10 +203,6 @@ for m = 1:size(Available_images,1)
             f_plot = [min_idx, pixel_line(min_idx)
                       max_idx, pixel_line(min_idx)];
 
-            figure(f_figure)
-            hold on
-            plot(user_selected_pts(:,1),user_selected_pts(:,2),'*b')
-            hold on
 
             % If the feature is a finger
             if feature <= 10
@@ -246,24 +241,46 @@ for m = 1:size(Available_images,1)
 
             metric_pts = [metric_start; metric_end];
 
+            % Calculate Point so Matlab can display Axis Lines
+            % Feature is index, middle, ring, or pinky
+            if feature <= 8
+                axis_end_y1 = 350;
+                axis_end_y2 = points(end-1,2)+200;
+
+                axis_end_x1 = (axis_end_y1 - yint) / slope;
+                axis_end_x2 = (axis_end_y2 - yint) / slope;
+
+                
+            % Feature is a thumb or a knuckle
+            else
+                axis_end_x1 = user_selected_pts(i,1) - dist;
+                axis_end_x2 = user_selected_pts(i,1) + dist;
+                              
+                axis_end_y1 = axis_end_x1 * slope + yint;
+                axis_end_y2 = axis_end_x2 * slope + yint;
+            
+            end
+
+            selected_pts_axis = [axis_end_x1,  axis_end_y1
+                                 axis_end_x2,  axis_end_y2];
+            
+
             % Plot Hand Image with selected points
             %   AND sweep lines
             %   AND calculate feature metric
             figure(f_figure)
             hold on
-            plot(user_selected_pts(:,1),user_selected_pts(:,2),'*w')
+            plot(user_selected_pts(:,1),user_selected_pts(:,2),'*m',...
+                'LineWidth',3)
             hold on
-            plot(sweep_pts(:,1),sweep_pts(:,2),'--*b')
+            plot(selected_pts_axis(:,1),selected_pts_axis(:,2),'-m')
             hold on
-            plot(metric_start(:,1),metric_start(:,2),'dr:')
+            plot(sweep_pts(:,1),sweep_pts(:,2),'--*b','LineWidth',2)
             hold on
-            plot(metric_end(:,1),metric_end(:,2),'r:square')
-            hold on
-            plot(metric_pts(:,1),metric_pts(:,2),'r:')
-            hold on
-            plot(mid_pt(:,1),mid_pt(:,2),'g:o')
+            plot(metric_pts(:,1),metric_pts(:,2),'dg:','LineWidth',1)
             hold on
             legend('Points Selected',...
+                   'Axis / Line through Points Selected ',...
                    'Area to be sweep / analyzed',...
                    'Calculated Feature Metric')
 
@@ -276,16 +293,16 @@ for m = 1:size(Available_images,1)
             hold on
             subplot(6,2,f_subplot)
             yyaxis left
-            plot(pixel_line,'b*:')
+            plot(pixel_line,'b*:','LineWidth',2)
             hold on
-            plot(f_plot(:,1),f_plot(:,2),'msquare-','LineWidth',3)
+            plot(f_plot(:,1),f_plot(:,2),'rsquare-','LineWidth',2)
             hold on
             yyaxis right
-            plot(d_pixel,'g+:')
+            plot(d_pixel,'g+:','LineWidth',2)
             hold on
-            plot(min_idx,d_pixel(min_idx),'rd','LineWidth',3)
+            plot(min_idx,d_pixel(min_idx),'md','LineWidth',3)
             hold on
-            plot(max_idx,d_pixel(max_idx),'rd','LineWidth',3)
+            plot(max_idx,d_pixel(max_idx),'md','LineWidth',3)
             hold on
             % plot(d2_pixel,'msquare:')
             % hold on
@@ -302,10 +319,9 @@ for m = 1:size(Available_images,1)
             title(subplot_title);
             f_subplot = f_subplot+1;
 
-
         end     % All points in a feature - Iteration Done
 
-    
+   
         
     hold on
     
