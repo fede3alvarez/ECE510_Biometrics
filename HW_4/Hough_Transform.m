@@ -7,16 +7,16 @@ clc;
 % Homework 4 - Iris
 
 Available_images = [...
-                    %'iris1.png'
+                    'iris1.png'
                      'iris2.png'
-                    % 'iris3.png'
-                    % 'iris4.png'
-                    % 'iris5.png'
-                    % 'iris6.png'
+                    'iris3.png'
+                    'iris4.png'
+                    'iris5.png'
+                    'iris6.png'
                     ];
 
 f_figure = 1;
-gauss = 7;
+gauss = 1;
 
 theta = 0 : 0.01 : 2*pi;
 
@@ -26,12 +26,12 @@ for m = 1:size(Available_images,1)
 
     % Filter Image and get Binary
     Image_A = imgaussfilt(Image_A,gauss);  
-    Binary_A = imbinarize(Image_A);
+    %Image_A = imbinarize(Image_A);
     
     % Plot 
-    figure(f_figure)
-    imshowpair(Image_A,Binary_A,'montage')
-
+    % figure(f_figure)
+    % imshowpair(Image_A,Image_A,'montage')
+    % f_figure = f_figure + 1;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %                Finding the              %
@@ -39,16 +39,16 @@ for m = 1:size(Available_images,1)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % Initialize Matrix to keep track gradient x-ing
-    Grad_Crossroads = zeros(size(Binary_A));
-    [Grad_mag, Grad_dir] = imgradient(Binary_A);
+    Grad_Crossroads = zeros(size(Image_A));
+    [Grad_mag, Grad_dir] = imgradient(Image_A);
     Grad_dir = deg2rad(Grad_dir);
     
     % Helper Values  
-    x_steps = zeros(size(Binary_A,1),1);
-    y_steps = zeros(size(Binary_A,1),1);
+    x_steps = zeros(size(Image_A,1),1);
+    y_steps = zeros(size(Image_A,1),1);
     % Old fashion iteration per element
-    for row = 1:size(Binary_A,1)
-        for col = 1:size(Binary_A,2)
+    for row = 1:size(Image_A,1)
+        for col = 1:size(Image_A,2)
 
             % Before doing any math, 
             %   less make sure the gradient is not zero
@@ -61,16 +61,16 @@ for m = 1:size(Available_images,1)
                 % If Gradient is not zero, 
                 %   go through each x value in image
                 %   and calculate the gradient line / direction
-                for x_step = 1:size(Binary_A,1);
+                for x_step = 1:size(Image_A,1);
                     % Calculate match y-value
-                    y_step = round(x_step * tan(Grad_dir(row,col)-pi/2) + col);
+                    y_step = round((x_step - row)* tan(Grad_dir(row,col)+pi/2) + col);
 
                     % Populate Map if the value is not a repeat
                     %   and value is within bounds
                     if ((x_step_old ~= x_step) &...
                         (y_step_old ~= y_step) &...
-                        (size(Binary_A,1) >= x_step) &...
-                        (size(Binary_A,2) >= y_step) &...
+                        (size(Image_A,1) >= x_step) &...
+                        (size(Image_A,2) >= y_step) &...
                         (x_step >= 1) & (y_step >= 1))
                             Grad_Crossroads(x_step,y_step) = ...
                                 Grad_Crossroads(x_step,y_step) + 1;
@@ -95,17 +95,24 @@ for m = 1:size(Available_images,1)
     %                 Candidates              %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    % Assuming that the center will be somewhat closer to the image center
+    % than the edges
+    % Grad_Crossroads_Candidate = Grad_Crossroads(...
+    %     [(round(0.25*size(Image_A,1))):(round(0.75*size(Image_A,1)))],...
+    %     [(round(0.25*size(Image_A,2))):(round(0.75*size(Image_A,2)))]);
+    Grad_Crossroads_Candidate = Grad_Crossroads;
     [y_center, x_center] = find(...
-                       ismember(Grad_Crossroads, max(Grad_Crossroads(:))));
+                       ismember(Grad_Crossroads_Candidate,...
+                                max(Grad_Crossroads_Candidate(:))));
 
     % Plot Center Candidates
-    f_figure = f_figure + 1;
     figure(f_figure)
-    imshow(Binary_A);
+    imshow(Image_A);
     title("Center Candidates");
     hold on
     plot(x_center,y_center,'*m','LineWidth',2);
     %plot(x_center,y_center,'*g-');
+    f_figure = f_figure + 1;
 
 end % End-Image
 
