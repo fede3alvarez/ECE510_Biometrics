@@ -15,11 +15,11 @@ clc;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Images
-Available_images = ['iris1.jpg'
-                    'iris2.jpg'
-                    'iris3.jpg'
-                    'iris4.jpg'
-                    'iris5.jpg'
+ Available_images = [%'iris1.jpg'
+%                     'iris2.jpg'
+%                     'iris3.jpg'
+%                     'iris4.jpg'
+%                     'iris5.jpg'
                     'iris6.jpg'
                     ];
 
