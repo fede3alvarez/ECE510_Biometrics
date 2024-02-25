@@ -32,37 +32,37 @@ for m = 1:size(Available_images,1)
     size(Image_A)
     size(Map_A)
 
-    % Convert to Grayscale
-    % Gray_Map_A = rgb2gray(Image_A);
-    % size(Gray_Map_A)
-    % Filter Image
-    %Gray_Map_A = imgaussfilt(Gray_Map_A,5);
+    Convert to Grayscale
+    Gray_Map_A = rgb2gray(Image_A);
+    size(Gray_Map_A)
+    Filter Image
+    Gray_Map_A = imgaussfilt(Gray_Map_A,5);
     
-    % Plot Image
-    % figure(f_figure)
+    Plot Image
+    figure(f_figure)
 
-end
+%end
 
-% Fix Matlab axis so getpts is accurate
-    % hax = axes('Parent', figure(f_figure));
-    % axis(hax,'manual');
-    % imshow(Image_A);
-    % title(current_image);
+    %Fix Matlab axis so getpts is accurate
+    hax = axes('Parent', figure(f_figure));
+    axis(hax,'manual');
+    imshow(Image_A);
+    title(current_image);
         
-    % % Get user to select Point
-    %[x,y] = getpts;
+    % Get user to select Point
+    [x,y] = getpts;
 
-    % % Save data
-    % save_file_selections = strcat(current_image(1:5),'_data')
-    % save(save_file_selections,'x','y')
+    % Save data
+    save_file_selections = strcat(current_image(1:5),'_data')
+    save(save_file_selections,'x','y')
 
-    %% Load saved data
-    % load_selections = strcat(current_image(1:11),'_data.mat');
-    % selections = importdata(load_selections);
-    % x = selections.x;
-    % y = selections.y;
-    % hold on
+    % Load saved data
+    load_selections = strcat(current_image(1:11),'_data.mat');
+    selections = importdata(load_selections);
+    x = selections.x;
+    y = selections.y;
+    hold on
 
-% 
-%     f_figure = f_figure + 1;
-% end         % All images Iteration
+
+    f_figure = f_figure + 1;
+end         % All images Iteration
