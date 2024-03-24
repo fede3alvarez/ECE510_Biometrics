@@ -244,11 +244,8 @@ for m = 1:size(Available_images,1)
 
 
     % Initialize arrays to collect windows analysis results
-    upper_x = [];
-    upper_y = [];
-
-    upper_x_gauss = [];
-    upper_y_gauss = [];
+    upper_x_curr = [];
+    upper_y_curr = [];
 
     upper_x_teeth_sep = [];
     upper_y_teeth_sep = [];
@@ -266,105 +263,106 @@ for m = 1:size(Available_images,1)
     upper_pvi_Di = [];
     upper_pvi_Di_yi = [];
 
-    % Iterate through "windows" until the image is swept
-    while (y_im > upper_window_end)
+    % Iterate through image 
+    for upper_x_curr = 2:(x_im-1)
 
-        % Assumption: 
-        % 1- Window_start a windows_end form a line than is 
-        %    close enought to the 2nd degree valley approx.
-        % 2- The Horizontal Window sweep should take place on the 
-        %    perpendicular to the line referenced in Assumption 1. 
+        % Assumption / Approach: 
+        % 1- We will iterate through each point on the x-axis
+        %    Calculate the mean resolution of the perpendicular line at
+        %    that point AND
+        %    use that perpendicular line intensity to identify valleys
 
+        % Find the matching y point on the curb
+        upper_y_curr = [(upper_x_curr^2) * coeff_gauss_valley(1) + ...
+                        (upper_x_curr^1) * coeff_gauss_valley(2) + ...
+                        (upper_x_curr^0) * coeff_gauss_valley(3)];
 
-        % Finding the center point of the Upper Hor Window
-        upper_x_window = [upper_window_start, upper_window_end];
-        upper_y_window = [(upper_window_start^2) * coeff_gauss_valley(1) + ...
-                          (upper_window_start^1) * coeff_gauss_valley(2) + ...
-                          (upper_window_start^0) * coeff_gauss_valley(3),...
-                          (upper_window_end^2) * coeff_gauss_valley(1) + ...
-                          (upper_window_end^1) * coeff_gauss_valley(2) + ...
-                          (upper_window_end^0) * coeff_gauss_valley(3)];
+        upper_y_before = [((upper_x_curr-1)^2)*coeff_gauss_valley(1)+...
+                          ((upper_x_curr-1)^1)*coeff_gauss_valley(2)+...
+                          ((upper_x_curr-1)^0)*coeff_gauss_valley(3)];
 
+        upper_y_after = [((upper_x_curr+1)^2)*coeff_gauss_valley(1)+...
+                         ((upper_x_curr+1)^1)*coeff_gauss_valley(2)+...
+                         ((upper_x_curr+1)^0)*coeff_gauss_valley(3)];
+        
         % Windows / Line Direction of the 2nd Deg Approx
-        wind_slope =  diff(upper_y_window) / diff(upper_x_window);
+        wind_slope = (upper_y_after - upper_y_before) / 2 ;
         
         % Tangent to Windows / Line
         wind_tan_slope = -1 / wind_slope;
 
-        for upper_x_curr = upper_window_start:upper_window_end
-          
-            % Find valley intercept
-            upper_y_curr = (upper_x_curr^2) * coeff_gauss_valley(1) + ...
-                           (upper_x_curr^1) * coeff_gauss_valley(2) + ...
-                           (upper_x_curr^0) * coeff_gauss_valley(3);
+        % Find the offset b of the tangent line
+        % upper_y_curr = wind_tan_slope * upper_x_curr + b
+        b = upper_y_curr - wind_tan_slope * upper_x_curr;
 
-            % Find the offset b of the tangent line
-            % upper_y_curr = wind_tan_slope * upper_x_curr + b
-            b = upper_y_curr - wind_tan_slope * upper_x_curr;
+        % Find x-intercept
+        upper_y_intpt_y = 0;
+        upper_y_intpt_x = (upper_y_intpt_y - b) / wind_tan_slope;
 
-            % Find x-intercept
-            upper_y_intpt_y = 0;
-            upper_y_intpt_x = (upper_y_intpt_y - b) / wind_tan_slope;
+        % Find y-intercept
+        upper_x_intpt_x = 0;
+        upper_x_intpt_y = wind_tan_slope * upper_x_intpt_x + b;
+        
+        % Calculate Sweep Line
+        %    i.e From point in Valley 2nd Degree Approx to where?
+        if (upper_y_intpt_x > 0)
+            upper_x_lim = upper_y_intpt_x;
+            upper_y_lim = upper_y_intpt_y;
+        else
+            upper_x_lim = upper_x_intpt_x;
+            upper_y_lim = upper_x_intpt_y;
+        end
 
-            % Find y-intercept
-            upper_x_intpt_x = 0;
-            upper_x_intpt_y = wind_tan_slope * upper_x_intpt_x + b;
+        if (upper_x_curr > upper_x_lim)
+            upper_x_sweep = round(upper_x_lim+1):round(upper_x_curr-1);
             
-            % Calculate Sweep
-            if (upper_y_intpt_x > 0)
-                upper_x_lim = upper_y_intpt_x;
-                upper_y_lim = upper_y_intpt_y;
-            else
-                upper_x_lim = upper_x_intpt_x;
-                upper_y_lim = upper_x_intpt_y;
-            end
+            % Store values
+            upper_x_teeth_sep = [upper_x_teeth_sep;...
+                                     [round(upper_x_lim),...
+                                      round(upper_x_curr)]...
+                                ];
 
-            if (upper_x_curr > upper_x_lim)
-                upper_x_sweep = round(upper_x_lim):...
-                                round(upper_x_curr);
-            else
-                upper_x_sweep = round(upper_x_curr):...
-                                round(upper_x_lim);
-            end
+            upper_y_teeth_sep = [upper_y_teeth_sep;...
+                                     [round(upper_y_lim),...
+                                      round(upper_y_curr)]...
+                                ];
 
-            % Define sweep range (since it is perpendicula to the 2nd
-            %   degree approaximation)
-            upper_x_sweep = upper_x_sweep(x_im > upper_x_sweep);
-            upper_y_sweep = round((upper_x_sweep - b) / wind_tan_slope);
+        else
+            upper_x_sweep = round(upper_x_curr-1):...
+                            round(upper_x_lim+1);
+
+            % Store values
+            upper_x_teeth_sep  = [upper_x_teeth_sep;...
+                                      [round(upper_y_curr),...
+                                       round(upper_y_lim)]...
+                                  ];
+        end
+
+        % Define sweep range (since it is perpendicula to the 2nd
+        %   degree approaximation)
+        upper_x_sweep = upper_x_sweep(x_im > upper_x_sweep);
+        upper_y_sweep = round((upper_x_sweep - b) / wind_tan_slope);
+        
+        % Ensure sweep range is within image limits
+        upper_x_sweep = upper_x_sweep(y_im > upper_y_sweep);
+        upper_y_sweep = upper_y_sweep(y_im > upper_y_sweep);
+        
+        % Sweept values, collect mean, and smooth it
+        for upper_sweep_pt = 1:size(upper_x_sweep,2)
+            upper_y_int_mean = mean(...
+                            Image_A(upper_y_sweep(upper_sweep_pt),...
+                                    upper_x_sweep(upper_sweep_pt))...
+                                    );
+        end
+        upper_y_int_mean = smoothn(upper_y_int_mean);
             
-            % Ensure sweep range is within image limits
-            upper_x_sweep = upper_x_sweep(y_im > upper_y_sweep);
-            upper_y_sweep = upper_y_sweep(y_im > upper_y_sweep);
-            
-            % Sweept values, collect mean, and smooth it
-            upper_y_int_mean = mean(Image_A(upper_y_sweep,upper_x_sweep));
-            upper_y_int_mean = smoothn(upper_y_int_mean);
-            
-
-        end % End of Window Sweep
-
         % Find min and max intensity sweeps
         [upper_min_val, upper_min_idx] = min(upper_y_int_mean);
         [upper_max_val, upper_max_idx] = max(upper_y_int_mean);
 
         % Store values
-        upper_x_int = [upper_x_int, mean(upper_window_start,upper_window_end)];
+        upper_x_int = [upper_x_int, upper_x_curr];
         upper_y_int = [upper_y_int, upper_y_int_mean(upper_min_idx)];
-
-
-        %--------------------------------------------
-        % Update parameters for next cycle
-        %--------------------------------------------
-
-        upper_window_start = upper_window_end - upper_window_overlap;
-        upper_window_end = upper_window_start + upper_window_size;
-        % upper_x_int = [];
-        % upper_y_int = [];
-
-        if (upper_window_end >= x_im)
-            upper_window_end = x_im;
-        end
-
 
 
     end % ENd of Upper While Loop
