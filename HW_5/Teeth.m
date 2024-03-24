@@ -16,6 +16,10 @@ clc;
 % This Homework has a single image...
 f_figure = 1;
 
+%---------------------------------------
+% Parameters for Valley calculation
+%---------------------------------------
+
 % Separation of local miniman when inspecting Intensity
 min_dist = 10;
 
@@ -29,6 +33,21 @@ window_factor = 10;
 window_overlap = 0;
 
 c = 1;
+
+%---------------------------------------
+% Parameters for Individual 
+%   Teeth calculation
+%---------------------------------------
+upper_window_factor = 20;
+upper_window_overlap = 0;
+
+upper_c = 1;
+
+
+lower_window_factor = 20;
+lower_window_overlap = 0;
+
+lower_c = 1;
 
 for m = 1:size(Available_images,1)
 
@@ -100,10 +119,10 @@ for m = 1:size(Available_images,1)
         x_int = smoothn(x_int);
         x_curr = mean(window_start,window_end);
         
-        % Plot Image
-        f_figure = f_figure + 1;
-        figure(f_figure)
-        plot(x_int, y_int)
+        % % Plot Image
+        % f_figure = f_figure + 1;
+        % figure(f_figure)
+        % plot(x_int, y_int)
 
         [min_val, min_idx] = min(x_int);
         [max_val, max_idx] = max(x_int);
@@ -129,9 +148,7 @@ for m = 1:size(Available_images,1)
         x_int_min = x_int(int_min);
         y_int_min = y_int(int_min);
 
-        % We'll assume that y_hat is always the minimun closer to the
-        % middle
-        y_hat = y_im / 2;
+        % We'll assume that y_hat is intensity minimun
         y_hat = y_int(min_idx);
         maxK = sum(cumtrapz(x_int,y_int));
 
@@ -211,12 +228,151 @@ for m = 1:size(Available_images,1)
 
     %--------------------------------------------
     % Step 5: Repeat Steps 2-4 Horizontally
-    %--------------------------------------------
-
-    %--------------------------------------------
     % Step 6: Repeat Steps for Upper & Lower
     %              Ranges Separetely
     %--------------------------------------------
+
+    %--------------------------------------------
+    % Step 5.1: Define Sliding Window
+    %           for Upper Teeth
+    %--------------------------------------------
+
+    % Define Window
+    upper_window_size = round((y_im / 2) / upper_window_factor);
+    upper_window_start = round(upper_window_size / 2);
+    upper_window_end = upper_window_start + upper_window_size - upper_window_overlap;
+
+
+    % Initialize arrays to collect windows analysis results
+    upper_x = [];
+    upper_y = [];
+
+    upper_x_gauss = [];
+    upper_y_gauss = [];
+
+    upper_x_teeth_sep = [];
+    upper_y_teeth_sep = [];
+
+    % The "user-assisted initialization" referenced in the paper
+    %   will be interpreted to be the lower intensity detected
+    upper_x_int = [];
+    upper_y_int = [];
+
+    % From paper:
+    %    pvi_Di_yi = pvi_Di * pvi_yi
+    %    pvi_Di = c * {1 - Di / (max_k * Dk)}
+    %    pvi_yi = {1 / [sigma*sqrt(2*pi)]} * exp{-(yi-y_int)^2/(sigma^2)}
+    upper_pvi_yi = [];
+    upper_pvi_Di = [];
+    upper_pvi_Di_yi = [];
+
+    % Iterate through "windows" until the image is swept
+    while (y_im > upper_window_end)
+
+        % Assumption: 
+        % 1- Window_start a windows_end form a line than is 
+        %    close enought to the 2nd degree valley approx.
+        % 2- The Horizontal Window sweep should take place on the 
+        %    perpendicular to the line referenced in Assumption 1. 
+
+
+        % Finding the center point of the Upper Hor Window
+        upper_x_window = [upper_window_start, upper_window_end];
+        upper_y_window = [(upper_window_start^2) * coeff_gauss_valley(1) + ...
+                          (upper_window_start^1) * coeff_gauss_valley(2) + ...
+                          (upper_window_start^0) * coeff_gauss_valley(3),...
+                          (upper_window_end^2) * coeff_gauss_valley(1) + ...
+                          (upper_window_end^1) * coeff_gauss_valley(2) + ...
+                          (upper_window_end^0) * coeff_gauss_valley(3)];
+
+        % Windows / Line Direction of the 2nd Deg Approx
+        wind_slope =  diff(upper_y_window) / diff(upper_x_window);
+        
+        % Tangent to Windows / Line
+        wind_tan_slope = -1 / wind_slope;
+
+        for upper_x_curr = upper_window_start:upper_window_end
+          
+            % Find valley intercept
+            upper_y_curr = (upper_x_curr^2) * coeff_gauss_valley(1) + ...
+                           (upper_x_curr^1) * coeff_gauss_valley(2) + ...
+                           (upper_x_curr^0) * coeff_gauss_valley(3);
+
+            % Find the offset b of the tangent line
+            % upper_y_curr = wind_tan_slope * upper_x_curr + b
+            b = upper_y_curr - wind_tan_slope * upper_x_curr;
+
+            % Find x-intercept
+            upper_y_intpt_y = 0;
+            upper_y_intpt_x = (upper_y_intpt_y - b) / wind_tan_slope;
+
+            % Find y-intercept
+            upper_x_intpt_x = 0;
+            upper_x_intpt_y = wind_tan_slope * upper_x_intpt_x + b;
+            
+            % Calculate Sweep
+            if (upper_y_intpt_x > 0)
+                upper_x_lim = upper_y_intpt_x;
+                upper_y_lim = upper_y_intpt_y;
+            else
+                upper_x_lim = upper_x_intpt_x;
+                upper_y_lim = upper_x_intpt_y;
+            end
+
+            if (upper_x_curr > upper_x_lim)
+                upper_x_sweep = round(upper_x_lim):...
+                                round(upper_x_curr);
+            else
+                upper_x_sweep = round(upper_x_curr):...
+                                round(upper_x_lim);
+            end
+
+            % Define sweep range (since it is perpendicula to the 2nd
+            %   degree approaximation)
+            upper_x_sweep = upper_x_sweep(x_im > upper_x_sweep);
+            upper_y_sweep = round((upper_x_sweep - b) / wind_tan_slope);
+            
+            % Ensure sweep range is within image limits
+            upper_x_sweep = upper_x_sweep(y_im > upper_y_sweep);
+            upper_y_sweep = upper_y_sweep(y_im > upper_y_sweep);
+            
+            % Sweept values, collect mean, and smooth it
+            upper_y_int_mean = mean(Image_A(upper_y_sweep,upper_x_sweep));
+            upper_y_int_mean = smoothn(upper_y_int_mean);
+            
+
+        end % End of Window Sweep
+
+        % Find min and max intensity sweeps
+        [upper_min_val, upper_min_idx] = min(upper_y_int_mean);
+        [upper_max_val, upper_max_idx] = max(upper_y_int_mean);
+
+        % Store values
+        upper_x_int = [upper_x_int, mean(upper_window_start,upper_window_end)];
+        upper_y_int = [upper_y_int, upper_y_int_mean(upper_min_idx)];
+
+
+        %--------------------------------------------
+        % Update parameters for next cycle
+        %--------------------------------------------
+
+        upper_window_start = upper_window_end - upper_window_overlap;
+        upper_window_end = upper_window_start + upper_window_size;
+        % upper_x_int = [];
+        % upper_y_int = [];
+
+        if (upper_window_end >= x_im)
+            upper_window_end = x_im;
+        end
+
+
+
+    end % ENd of Upper While Loop
+
+    % % Plot Image
+    f_figure = f_figure + 1;
+    figure(f_figure)
+    plot(upper_x_int, upper_y_int)
 
     %--------------------------------------------
     % Step 7: Teeth Separation
