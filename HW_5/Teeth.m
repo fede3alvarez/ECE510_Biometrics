@@ -40,14 +40,13 @@ c = 1;
 %---------------------------------------
 upper_window_factor = 20;
 upper_window_overlap = 0;
-
-upper_c = 1;
-
+upper_min_dist = 15;
+upper_numb_of_teeth = 5;
 
 lower_window_factor = 20;
 lower_window_overlap = 0;
-
-lower_c = 1;
+lower_min_dist = 15;
+lower_numb_of_teeth = 5;
 
 for m = 1:size(Available_images,1)
 
@@ -237,12 +236,6 @@ for m = 1:size(Available_images,1)
     %           for Upper Teeth
     %--------------------------------------------
 
-    % Define Window
-    upper_window_size = round((y_im / 2) / upper_window_factor);
-    upper_window_start = round(upper_window_size / 2);
-    upper_window_end = upper_window_start + upper_window_size - upper_window_overlap;
-
-
     % Initialize arrays to collect windows analysis results
     upper_x_curr = [];
     upper_y_curr = [];
@@ -354,15 +347,10 @@ for m = 1:size(Available_images,1)
                                     upper_x_sweep(upper_sweep_pt))...
                                     );
         end
-        upper_y_int_mean = smoothn(upper_y_int_mean);
             
-        % Find min and max intensity sweeps
-        [upper_min_val, upper_min_idx] = min(upper_y_int_mean);
-        [upper_max_val, upper_max_idx] = max(upper_y_int_mean);
-
         % Store values
         upper_x_int = [upper_x_int, upper_x_curr];
-        upper_y_int = [upper_y_int, upper_y_int_mean(upper_min_idx)];
+        upper_y_int = [upper_y_int, upper_y_int_mean];
 
 
     end % ENd of Upper While Loop
@@ -373,7 +361,35 @@ for m = 1:size(Available_images,1)
     plot(upper_x_int, upper_y_int)
 
     %--------------------------------------------
-    % Step 7: Teeth Separation
+    % Step 7.1: Upper Teeth Separation
     %--------------------------------------------
+    
+    % Find min and max intensity sweeps
+    [upper_min_val, upper_min_idx] = min(upper_y_int_mean);
+    [upper_max_val, upper_max_idx] = max(upper_y_int_mean);
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%% CONTINUE HERE
+    % Iterate throguh the GLOBAL Minina per number of teeth
+
+    % Find all local Minima
+    upper_int_min = islocalmin(upper_y_int,...
+                               'MinSeparation',...
+                               upper_min_dist);
+
+
+    upper_x_teeth_sep_plot = upper_x_teeth_sep(upper_int_min,:);
+    upper_y_teeth_sep_plot = upper_y_teeth_sep(upper_int_min,:);
+
+    % Plot Image
+    for teeth = 1:upper_numb_of_teeth
+
+        %
+
+        figure(1)
+        hold on
+        plot(upper_x_teeth_sep_plot(teeth,:),...
+             upper_y_teeth_sep_plot(teeth,:),...
+             'm-','LineWidth',2) 
+    end
 end         % All images Iteration
