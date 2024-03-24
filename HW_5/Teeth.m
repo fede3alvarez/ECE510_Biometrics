@@ -60,7 +60,7 @@ for m = 1:size(Available_images,1)
 
     % Define Window
     window_size = round(x_im / window_factor);
-    window_start = 1;
+    window_start = round(window_size / 2);
     window_end = window_start + window_size - window_overlap;
 
     % Initialize arrays to collect windows analysis results
@@ -98,7 +98,8 @@ for m = 1:size(Available_images,1)
     
         % Smooth Intensity
         x_int = smoothn(x_int);
-
+        x_curr = mean(window_start,window_end);
+        
         % Plot Image
         f_figure = f_figure + 1;
         figure(f_figure)
@@ -107,7 +108,7 @@ for m = 1:size(Available_images,1)
         [min_val, min_idx] = min(x_int);
         [max_val, max_idx] = max(x_int);
         
-        x = [x, mean(window_start,window_end)];
+        x = [x, x_curr];
         y = [y, y_int(min_idx)];
 
     
@@ -131,6 +132,7 @@ for m = 1:size(Available_images,1)
         % We'll assume that y_hat is always the minimun closer to the
         % middle
         y_hat = y_im / 2;
+        y_hat = y_int(min_idx);
         maxK = sum(cumtrapz(x_int,y_int));
 
         pvi_yi = [];
@@ -165,8 +167,8 @@ for m = 1:size(Available_images,1)
         end
 
         [gauss_val, gauss_idx] = max(pvi_Di_yi);
-    
-        x_gauss = [x_gauss, x_int_min(gauss_idx)];
+
+        x_gauss = [x_gauss, x_curr];
         y_gauss = [y_gauss, y_int_min(gauss_idx)];
 
         %--------------------------------------------
@@ -191,8 +193,6 @@ for m = 1:size(Available_images,1)
     % Plot Image
     figure(1)
     hold on
-    plot(x,y,'g*')
-    hold on
     plot(x_gauss,y_gauss,'m*')
 
 
@@ -200,14 +200,14 @@ for m = 1:size(Available_images,1)
     % Step 4: 2nd Degree Polynomial
     %--------------------------------------------
     
-    coeff_valley = polyfit(x,y,2);
-    x_valley = 1:x_im;
-    y_valley = polyval(coeff_valley, x_valley);
+    coeff_gauss_valley = polyfit(x_gauss,y_gauss,2);
+    x_gauss_valley = 1:x_im;
+    y_gauss_valley = polyval(coeff_gauss_valley, x_gauss_valley);
 
     % Plot Image
     figure(1)
     hold on
-    plot(x_valley, y_valley, 'b-')
+    plot(x_gauss_valley, y_gauss_valley, 'm-','LineWidth',2)
 
     %--------------------------------------------
     % Step 5: Repeat Steps 2-4 Horizontally
