@@ -40,7 +40,7 @@ c = 1;
 %---------------------------------------
 upper_window_factor = 20;
 upper_window_overlap = 0;
-upper_min_dist = 15;
+upper_min_dist = 25;
 upper_numb_of_teeth = 5;
 
 lower_window_factor = 20;
@@ -326,9 +326,14 @@ for m = 1:size(Available_images,1)
 
             % Store values
             upper_x_teeth_sep  = [upper_x_teeth_sep;...
-                                      [round(upper_y_curr),...
-                                       round(upper_y_lim)]...
+                                      [round(upper_x_curr),...
+                                       round(upper_x_lim)]...
                                   ];
+
+            upper_y_teeth_sep = [upper_y_teeth_sep;...
+                                     [round(upper_y_curr),...
+                                      round(upper_y_lim)]...
+                                ];
         end
 
         % Define sweep range (since it is perpendicula to the 2nd
@@ -340,6 +345,11 @@ for m = 1:size(Available_images,1)
         upper_x_sweep = upper_x_sweep(y_im > upper_y_sweep);
         upper_y_sweep = upper_y_sweep(y_im > upper_y_sweep);
         
+        %------------------------
+        % LOOK HERE TO  LIMIT NOISE AT TOP AND BOTTOM
+        % TO DO
+
+
         % Sweept values, collect mean, and smooth it
         for upper_sweep_pt = 1:size(upper_x_sweep,2)
             upper_y_int_mean = mean(...
@@ -349,8 +359,8 @@ for m = 1:size(Available_images,1)
         end
             
         % Store values
-        upper_x_int = [upper_x_int, upper_x_curr];
-        upper_y_int = [upper_y_int, upper_y_int_mean];
+        upper_x_int = [upper_x_int; upper_x_curr];
+        upper_y_int = [upper_y_int; upper_y_int_mean];
 
 
     end % ENd of Upper While Loop
@@ -363,33 +373,50 @@ for m = 1:size(Available_images,1)
     %--------------------------------------------
     % Step 7.1: Upper Teeth Separation
     %--------------------------------------------
-    
-    % Find min and max intensity sweeps
-    [upper_min_val, upper_min_idx] = min(upper_y_int_mean);
-    [upper_max_val, upper_max_idx] = max(upper_y_int_mean);
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%% CONTINUE HERE
-    % Iterate throguh the GLOBAL Minina per number of teeth
+    upper_inspection_band = size(upper_y_int,1)
+    upper_y_int_mean_plot = upper_y_int(...
+                              round(0.2*upper_inspection_band):...
+                              round(0.8*upper_inspection_band)...
+                              );
 
-    % Find all local Minima
-    upper_int_min = islocalmin(upper_y_int,...
-                               'MinSeparation',...
-                               upper_min_dist);
+    upper_x_teeth_sep_plot = upper_x_teeth_sep(...
+                              round(0.2*upper_inspection_band):...
+                              round(0.8*upper_inspection_band),:...
+                              );
 
-
-    upper_x_teeth_sep_plot = upper_x_teeth_sep(upper_int_min,:);
-    upper_y_teeth_sep_plot = upper_y_teeth_sep(upper_int_min,:);
-
+    upper_y_teeth_sep_plot = upper_y_teeth_sep(...
+                              round(0.3*upper_inspection_band):...
+                              round(0.7*upper_inspection_band),:...
+                              );
+        
     % Plot Image
     for teeth = 1:upper_numb_of_teeth
 
-        %
+        % Find min intensity
+        [upper_min_val, upper_min_idx] = min(upper_y_int_mean_plot);
 
+        % Plot Intensity / Teeth limit
         figure(1)
         hold on
-        plot(upper_x_teeth_sep_plot(teeth,:),...
-             upper_y_teeth_sep_plot(teeth,:),...
-             'm-','LineWidth',2) 
+        plot(upper_x_teeth_sep_plot(upper_min_idx,:),...
+             upper_y_teeth_sep_plot(upper_min_idx,:),...
+             'm-','LineWidth',2)
+        
+        clip_start = upper_min_idx - upper_min_dist;
+        clip_end = upper_min_idx + upper_min_dist;
+        
+        if (1 > clip_start)
+            clip_start = 1;
+        end
+
+        if (clip_end > size(upper_y_int_mean_plot))
+            clip_end = size(upper_y_int_mean_plot);
+        end
+
+        % Remove it for next iteration
+        upper_y_int_mean_plot(clip_start:clip_end) = [];
+        upper_x_teeth_sep_plot(clip_start:clip_end,:) = [];
+        upper_y_teeth_sep_plot(clip_start:clip_end,:) = [];
     end
 end         % All images Iteration
