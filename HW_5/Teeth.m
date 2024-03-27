@@ -42,7 +42,7 @@ horiz_sample_edge = 0.4;
 %   Teeth calculation
 %---------------------------------------
 upper_min_dist = 70;
-numb_of_teeth = 5;
+numb_of_teeth = 6;
 
 lower_min_dist = 15;
 lower_numb_of_teeth = 7;
@@ -56,7 +56,7 @@ for m = 1:size(Available_images,1)
     % In this case, it is in Grayscale
     current_image = Available_images(m,:);
     [Image_A, Map_A] = imread(current_image);
-    % Image_A = imgaussfilt(Image_A,3);  
+    Image_A = imgaussfilt(Image_A,3);  
     % Image_A = imgaussfilt(Image_A,3);  
     
     [y_im, x_im] = size(Image_A);
@@ -212,7 +212,6 @@ for m = 1:size(Available_images,1)
     hold on
     plot(x_gauss,y_gauss,'m*')
 
-
     %--------------------------------------------
     % Step 4: 2nd Degree Polynomial
     %--------------------------------------------
@@ -257,345 +256,261 @@ for m = 1:size(Available_images,1)
     upper_pvi_Di = [];
     upper_pvi_Di_yi = [];
 
-    % Iterate through image 
-    for upper_x_curr = 4:(x_im-4)
-
-        % Assumption / Approach: 
-        % 1- We will iterate through each point on the x-axis
-        %    Calculate the mean resolution of the perpendicular line at
-        %    that point AND
-        %    use that perpendicular line intensity to identify valleys
-
-        % Find the matching y point on the curb
-        upper_y_curr = [(upper_x_curr^2) * coeff_gauss_valley(1) + ...
-                        (upper_x_curr^1) * coeff_gauss_valley(2) + ...
-                        (upper_x_curr^0) * coeff_gauss_valley(3)];
-
-        upper_y_before = [((upper_x_curr-0.5)^2)*coeff_gauss_valley(1)+...
-                          ((upper_x_curr-0.5)^1)*coeff_gauss_valley(2)+...
-                          ((upper_x_curr-0.5)^0)*coeff_gauss_valley(3)];
-
-        upper_y_after = [((upper_x_curr+0.5)^2)*coeff_gauss_valley(1)+...
-                         ((upper_x_curr+0.5)^1)*coeff_gauss_valley(2)+...
-                         ((upper_x_curr+0.5)^0)*coeff_gauss_valley(3)];
-        
-        % Windows / Line Direction of the 2nd Deg Approx
-        wind_slope = (upper_y_after - upper_y_before) / 2 ;
-        
-        % Tangent to Windows / Line
-        wind_tan_slope = -1 / wind_slope;
-
-        % Find the offset b of the tangent line
-        % upper_y_curr = wind_tan_slope * upper_x_curr + b
-        b = upper_y_curr - wind_tan_slope * upper_x_curr;
-
-        % Find x-intercept
-        upper_x_intpt_y = 0;
-        upper_x_intpt_x = round((upper_x_intpt_y - b) / wind_tan_slope);
-       
-        % Find y-intercept
-        upper_y_intpt_x = 0;
-        upper_y_intpt_y = round(wind_tan_slope * upper_x_intpt_x + b);
-
-        % Calculate Sweep Line
-        %    i.e From point in Valley 2nd Degree Approx to where?
-        if (upper_y_intpt_x > 0)
-            upper_x_lim = upper_y_intpt_x;
-            upper_y_lim = upper_y_intpt_y;
-        else
-            upper_x_lim = upper_x_intpt_x;
-            upper_y_lim = upper_x_intpt_y;
-        end
-
-        if (upper_x_curr > upper_x_lim)
-            upper_x_sweep = round(upper_x_lim+1):round(upper_x_curr-1);
-            
-            % Store values
-            upper_x_teeth_sep = [upper_x_teeth_sep;...
-                                     [round(upper_x_lim),...
-                                      round(upper_x_curr)]...
-                                ];
-
-            upper_y_teeth_sep = [upper_y_teeth_sep;...
-                                     [round(upper_y_lim),...
-                                      round(upper_y_curr)]...
-                                ];
-
-        else
-            upper_x_sweep = round(upper_x_curr-1):...
-                            round(upper_x_lim+1);
-
-            % Store values
-            upper_x_teeth_sep  = [upper_x_teeth_sep;...
-                                      [round(upper_x_curr),...
-                                       round(upper_x_lim)]...
-                                  ];
-
-            upper_y_teeth_sep = [upper_y_teeth_sep;...
-                                     [round(upper_y_curr),...
-                                      round(upper_y_lim)]...
-                                ];
-        end
-
-        % Define sweep and trim out of image values
-        upper_x_sweep = round(upper_x_sweep(x_im > upper_x_sweep));
-        upper_y_sweep = round((upper_x_sweep - b) / wind_tan_slope);
-        
-        % Ensure sweep range is within image limits
-        upper_x_sweep = upper_x_sweep(y_im > upper_y_sweep);
-        upper_y_sweep = upper_y_sweep(y_im > upper_y_sweep);
-
-
-
-        % Round Edges - NO trimming
-        upper_low_lim = round(1); %round(size(upper_x_sweep,2)*0.1)
-        upper_high_lim = round(size(upper_x_sweep,2)*1);
-        
-        if (0 >= upper_low_lim)
-            upper_low_lim = 1;
-        end
-
-        if (upper_high_lim > size(upper_x_sweep,2))
-            upper_high_lim = size(upper_x_sweep,2);
-        end
-
-        upper_x_sweep = upper_x_sweep(upper_low_lim:upper_high_lim);
-        upper_y_sweep = upper_y_sweep(upper_low_lim:upper_high_lim);
-
-        %unique(sort(upper_sweep,2), 'rows')
-        % Sweept values, collect mean, and smooth it
-        for upper_sweep_pt = 1:size(upper_x_sweep,2)
-            upper_y_int_mean = mean(...
-                            Image_A(upper_y_sweep(upper_sweep_pt),...
-                                    upper_x_sweep(upper_sweep_pt))...
-                                    );
-        end
-            
-        % Store values
-        upper_y_int_mean = smoothn(upper_y_int_mean);
-        upper_x_int = [upper_x_int; upper_x_curr];
-        upper_y_int = [upper_y_int; upper_y_int_mean];
-
-
-    end % End of Upper While Loop
-
     %--------------------------------------------
-    % Step 5.2: Define Sliding Window
-    %           for Lower Teeth
+    % Step 5.1: Define Sliding Window
+    %           for teeth Teeth
     %--------------------------------------------
 
-      % Initialize arrays to collect windows analysis results
-    lower_x_curr = [];
-    lower_y_curr = [];
+    % Initialize arrays to collect windows analysis results
+    teeth_x_curr = [];
+    teeth_y_curr = [];
 
-    lower_x_teeth_sep = [];
-    lower_y_teeth_sep = [];
+    teeth_x_teeth_sep = [];
+    teeth_y_teeth_sep = [];
 
     % The "user-assisted initialization" referenced in the paper
     %   will be interpreted to be the lower intensity detected
-    lower_x_int = [];
-    lower_y_int = [];
+    upper_int_mean = [];
+    lower_int_mean = [];
 
     % From paper:
     %    pvi_Di_yi = pvi_Di * pvi_yi
     %    pvi_Di = c * {1 - Di / (max_k * Dk)}
     %    pvi_yi = {1 / [sigma*sqrt(2*pi)]} * exp{-(yi-y_int)^2/(sigma^2)}
-    lower_pvi_yi = [];
-    lower_pvi_Di = [];
-    lower_pvi_Di_yi = [];
+    teeth_pvi_yi = [];
+    teeth_pvi_Di = [];
+    teeth_pvi_Di_yi = [];
 
     % Iterate through image 
-    for lower_x_curr = 4:(x_im-4)
+    for teeth_x_curr = 4:(x_im-4)
 
+        %------------------------------------------------------------------
         % Assumption / Approach: 
         % 1- We will iterate through each point on the x-axis
         %    Calculate the mean resolution of the perpendicular line at
         %    that point AND
         %    use that perpendicular line intensity to identify valleys
-
-        % Find the matching y point on the curb
-        lower_y_curr = [(lower_x_curr^2) * coeff_gauss_valley(1) + ...
-                        (lower_x_curr^1) * coeff_gauss_valley(2) + ...
-                        (lower_x_curr^0) * coeff_gauss_valley(3)];
-
-        lower_y_before = [((lower_x_curr-0.5)^2)*coeff_gauss_valley(1)+...
-                          ((lower_x_curr-0.5)^1)*coeff_gauss_valley(2)+...
-                          ((lower_x_curr-0.5)^0)*coeff_gauss_valley(3)];
-
-        lower_y_after = [((lower_x_curr+0.5)^2)*coeff_gauss_valley(1)+...
-                         ((lower_x_curr+0.5)^1)*coeff_gauss_valley(2)+...
-                         ((lower_x_curr+0.5)^0)*coeff_gauss_valley(3)];
+        %------------------------------------------------------------------
         
+        %------------------------------------------------------------------
+        % Find the matching y point on the curb
+        %------------------------------------------------------------------
+        teeth_y_curr = [(teeth_x_curr^2) * coeff_gauss_valley(1) + ...
+                        (teeth_x_curr^1) * coeff_gauss_valley(2) + ...
+                        (teeth_x_curr^0) * coeff_gauss_valley(3)];
+
+        teeth_y_before = [((teeth_x_curr-1)^2)*coeff_gauss_valley(1)+...
+                          ((teeth_x_curr-1)^1)*coeff_gauss_valley(2)+...
+                          ((teeth_x_curr-1)^0)*coeff_gauss_valley(3)];
+
+        teeth_y_after = [((teeth_x_curr+1)^2)*coeff_gauss_valley(1)+...
+                         ((teeth_x_curr+1)^1)*coeff_gauss_valley(2)+...
+                         ((teeth_x_curr+1)^0)*coeff_gauss_valley(3)];
+
+        %------------------------------------------------------------------
+        % Find perpendicular to the point in the curb
+        %------------------------------------------------------------------
+
         % Windows / Line Direction of the 2nd Deg Approx
-        wind_slope = (lower_y_after - lower_y_before) / 2 ;
+        wind_slope = (teeth_y_after - teeth_y_before) / 2 ;
         
         % Tangent to Windows / Line
         wind_tan_slope = -1 / wind_slope;
 
         % Find the offset b of the tangent line
-        % lower_y_curr = wind_tan_slope * lower_x_curr + b
-        b = lower_y_curr - wind_tan_slope * lower_x_curr;
+        % teeth_y_curr = wind_tan_slope * teeth_x_curr + b
+        b = teeth_y_curr - wind_tan_slope * teeth_x_curr;
+        %------------------------------------------------------------------
 
-        % Find x-intercept
-        lower_x_intpt_y = y_im;
-        lower_x_intpt_x = round((lower_x_intpt_y - b) / wind_tan_slope);
-       
-        % Find y-intercept
-        lower_y_intpt_x = x_im;
-        lower_y_intpt_y = round(wind_tan_slope * lower_y_intpt_x + b);
 
+        %------------------------------------------------------------------
+        % Find upper and lower bounds perpendicular to the current point
+        %------------------------------------------------------------------
+
+        % Upper Limit
+        % teeth_y_curr = wind_tan_slope * teeth_x_curr + b
+        upper_lim_y = 1;
+        upper_lim_x = round((upper_lim_y - b) / wind_tan_slope);
+
+        % If limits outside the picture boundaries
+        if (1 > upper_lim_x)
+            upper_lim_x =  1;
+            upper_lim_y = round(wind_tan_slope * upper_lim_x + b);
+        elseif (upper_lim_x > x_im)
+            upper_lim_x =  x_im;
+            upper_lim_y = round(wind_tan_slope * upper_lim_x + b);
+        end
+
+        % Lower Limit
+        % teeth_y_curr = wind_tan_slope * teeth_x_curr + b
+        lower_lim_y = y_im;
+        lower_lim_x = round((lower_lim_y - b) / wind_tan_slope);
+
+        % If limits outside the picture boundaries
+        if (1 > lower_lim_x)
+            lower_lim_x =  1;
+            lower_lim_y = round(wind_tan_slope * lower_lim_x + b);
+        elseif (lower_lim_x > x_im)
+            lower_lim_x =  x_im;
+            lower_lim_y = round(wind_tan_slope * lower_lim_x + b);
+        end
+
+        % Save Limits (for plotting)
+        % Format to be used: [upper, current, lower]
+        teeth_x_teeth_sep = [teeth_x_teeth_sep; [upper_lim_x,...
+                                                 teeth_x_curr,...
+                                                 lower_lim_x]];
+
+        teeth_y_teeth_sep = [teeth_y_teeth_sep; [upper_lim_y,...
+                                                 teeth_y_curr,...
+                                                 lower_lim_y]];
+        %------------------------------------------------------------------
+
+        %------------------------------------------------------------------
         % Calculate Sweep Line
-        %    i.e From point in Valley 2nd Degree Approx to where?
-        if (lower_x_intpt_y > x_im)
-            lower_x_lim = lower_y_intpt_x;
-            lower_y_lim = lower_y_intpt_y;
-        else
-            lower_x_lim = lower_x_intpt_x;
-            lower_y_lim = lower_x_intpt_y;
-        end
+        %------------------------------------------------------------------
+        % Assumption / Approach: 
+        % Sweep will have decimal numbers that will be converted to int
+        %   this calculation will create the evaluation of duplicate points
+        % Assuming there are more duplicated of a specific pixel, this is due
+        %   to the fact that more "decimals" are in that pixel, and the
+        %   average intensity will therefore give more weight to those values
 
-        if (lower_x_lim > lower_x_curr)
-            lower_x_sweep = round(lower_x_lim+1):round(lower_x_curr-1);
-            
-            % Store values
-            lower_x_teeth_sep = [lower_x_teeth_sep;...
-                                     [round(lower_x_lim),...
-                                      round(lower_x_curr)]...
-                                ];
+        % Upper Sweep Values 
+        upper_teeth_x_sweep = linspace(teeth_x_curr, ...
+                                       upper_lim_x,...
+                                       horiz_sample_pts);
+        upper_teeth_y_sweep = (wind_tan_slope * upper_teeth_x_sweep + b);
 
-            lower_y_teeth_sep = [lower_y_teeth_sep;...
-                                     [round(lower_y_lim),...
-                                      round(lower_y_curr)]...
-                                ];
 
-        else
-            lower_x_sweep = round(lower_x_curr-1):...
-                            round(lower_x_lim+1);
+        % Lower Sweep Values 
+        lower_teeth_x_sweep = linspace(teeth_x_curr, ...
+                                       lower_lim_x,...
+                                       horiz_sample_pts);
+        lower_teeth_y_sweep = (wind_tan_slope * lower_teeth_x_sweep + b);
+        %------------------------------------------------------------------
 
-            % Store values
-            lower_x_teeth_sep  = [lower_x_teeth_sep;...
-                                      [round(lower_x_curr),...
-                                       round(lower_x_lim)]...
-                                  ];
+        %------------------------------------------------------------------
+        % Pre-image data massaging
+        % Let's trim values that are out of bounds
+        %------------------------------------------------------------------
 
-            lower_y_teeth_sep = [lower_y_teeth_sep;...
-                                     [round(lower_y_curr),...
-                                      round(lower_y_lim)]...
-                                ];
-        end
+        % Round value so we can use the to get actual pixel intensity
+        upper_teeth_x_sweep = round(upper_teeth_x_sweep); 
+        upper_teeth_y_sweep = round(upper_teeth_y_sweep); 
+        lower_teeth_x_sweep = round(lower_teeth_x_sweep); 
+        lower_teeth_y_sweep = round(lower_teeth_y_sweep); 
 
-        % Define sweep and trim out of image values
-        lower_x_sweep = round(lower_x_sweep(x_im > lower_x_sweep));
-        lower_y_sweep = round((lower_x_sweep - b) / wind_tan_slope);
+        % Define sweep and trim out of image values       
+        upper_teeth_x_sweep = upper_teeth_x_sweep(x_im > upper_teeth_x_sweep); 
+        upper_teeth_y_sweep = upper_teeth_y_sweep(x_im > upper_teeth_x_sweep); 
+        lower_teeth_x_sweep = lower_teeth_x_sweep(x_im > lower_teeth_x_sweep); 
+        lower_teeth_y_sweep = lower_teeth_y_sweep(x_im > lower_teeth_x_sweep); 
+
+        upper_teeth_x_sweep = upper_teeth_x_sweep(upper_teeth_x_sweep > 0); 
+        upper_teeth_y_sweep = upper_teeth_y_sweep(upper_teeth_x_sweep > 0); 
+        lower_teeth_x_sweep = lower_teeth_x_sweep(lower_teeth_x_sweep > 0); 
+        lower_teeth_y_sweep = lower_teeth_y_sweep(lower_teeth_x_sweep > 0); 
+
+        upper_teeth_x_sweep = upper_teeth_x_sweep(y_im > upper_teeth_y_sweep); 
+        upper_teeth_y_sweep = upper_teeth_y_sweep(y_im > upper_teeth_y_sweep); 
+        lower_teeth_x_sweep = lower_teeth_x_sweep(y_im > lower_teeth_y_sweep); 
+        lower_teeth_y_sweep = lower_teeth_y_sweep(y_im > lower_teeth_y_sweep); 
+
+        upper_teeth_x_sweep = upper_teeth_x_sweep(upper_teeth_y_sweep > 0); 
+        upper_teeth_y_sweep = upper_teeth_y_sweep(upper_teeth_y_sweep > 0); 
+        lower_teeth_x_sweep = lower_teeth_x_sweep(lower_teeth_y_sweep > 0); 
+        lower_teeth_y_sweep = lower_teeth_y_sweep(lower_teeth_y_sweep > 0); 
+
+        % % Round Edges - No trimming
+        % % Ignore top or bottom pixels due to noise 
+        % teeth_low_lim = round(1); 
+        % teeth_high_lim = round(size(teeth_x_sweep,2)*1);
+        %------------------------------------------------------------------
+
+        %------------------------------------------------------------------
+        % Let's collect the individual teeth intensity        
+        %------------------------------------------------------------------
         
-        % Ensure sweep range is within image limits
-        lower_x_sweep = lower_x_sweep(y_im > lower_y_sweep);
-        lower_y_sweep = lower_y_sweep(y_im > lower_y_sweep);
-
-        lower_x_sweep = lower_x_sweep(lower_y_sweep > 0);
-        lower_y_sweep = lower_y_sweep(lower_y_sweep > 0);
-
-
-        % Round Edges - NO trimming
-        lower_low_lim = round(1); %round(size(lower_x_sweep,2)*0.1)
-        lower_high_lim = round(size(lower_x_sweep,2)*1);
-        
-        if (0 >= lower_low_lim)
-            lower_low_lim = 1;
+        % Upper teeth - Collect mean intensity
+        for upper_tooth = 1:size(upper_teeth_x_sweep,2)
+            upper_y_int_mean = mean(...
+                                   Image_A(upper_teeth_y_sweep(upper_tooth),...
+                                           upper_teeth_x_sweep(upper_tooth))...
+                                    );
         end
 
-        if (lower_high_lim > size(lower_x_sweep,2))
-            lower_high_lim = size(lower_x_sweep,2);
-        end
-
-        lower_x_sweep = lower_x_sweep(lower_low_lim:lower_high_lim);
-        lower_y_sweep = lower_y_sweep(lower_low_lim:lower_high_lim);
-
-        %unique(sort(lower_sweep,2), 'rows')
-        % Sweept values, collect mean, and smooth it
-        for lower_sweep_pt = 1:size(lower_x_sweep,2)
+        % Lower teeth - Collect mean intensity
+        for lower_tooth = 1:size(lower_teeth_x_sweep,2)
             lower_y_int_mean = mean(...
-                            Image_A(lower_y_sweep(lower_sweep_pt),...
-                                    lower_x_sweep(lower_sweep_pt))...
+                                   Image_A(lower_teeth_y_sweep(lower_tooth),...
+                                           lower_teeth_x_sweep(lower_tooth))...
                                     );
         end
             
-        % Store values
-        lower_y_int_mean = smoothn(lower_y_int_mean);
-        lower_x_int = [lower_x_int; lower_x_curr];
-        lower_y_int = [lower_y_int; lower_y_int_mean];
+        % Smooth Intensity
+        % upper_y_int_mean = smoothn(upper_y_int_mean);
+        % lower_y_int_mean = smoothn(lower_y_int_mean);
+        % 
+        % upper_y_int_mean = smoothn(upper_y_int_mean);
+        % lower_y_int_mean = smoothn(lower_y_int_mean);
+        % 
+        % upper_y_int_mean = smoothn(upper_y_int_mean);
+        % lower_y_int_mean = smoothn(lower_y_int_mean);
+        % 
+        % upper_y_int_mean = smoothn(upper_y_int_mean);
+        % lower_y_int_mean = smoothn(lower_y_int_mean);
 
+        % Store Data
+        upper_int_mean = [upper_int_mean; upper_y_int_mean];
+        lower_int_mean = [lower_int_mean; lower_y_int_mean];
 
-    end % End of lower While Loop
-    
+    end % End of teeth While Loop
+
     %--------------------------------------------
-    % Step 7.1: Teeth Separation
+    % Step 7.1: Teeth Separation & Plotting
     %--------------------------------------------
 
+    figure(1)
+    hold on
+    plot(upper_int_mean,'g-','LineWidth',2)
+    hold on
+    plot(lower_int_mean,'m-','LineWidth',2)
 
-    upper_inspection_band = size(upper_y_int,1);
+    % Find the local minima
+    upper_min_idx = islocalmin(upper_int_mean,...
+                               'MinSeparation',55,...
+                               'MinProminence',numb_of_teeth);
+    lower_min_idx = islocalmin(lower_int_mean,...
+                               'MinSeparation',55,...
+                               'MinProminence',numb_of_teeth);
 
-    upper_y_int_mean_plot = upper_y_int;
-    upper_x_teeth_sep_plot = upper_x_teeth_sep;
-    upper_y_teeth_sep_plot = upper_y_teeth_sep;
-
-    lower_y_int_mean_plot = lower_y_int;
-    lower_x_teeth_sep_plot = lower_x_teeth_sep;
-    lower_y_teeth_sep_plot = lower_y_teeth_sep;
-
-    % % Plot Image
-    f_figure = f_figure + 1;
-    figure(f_figure)
-    plot(lower_x_int, lower_y_int)
+    % Upper - Massage Data for plotting
+    upper_int_mean_plot = upper_int_mean(upper_min_idx);
+    upper_x = teeth_x_teeth_sep(upper_min_idx,[1 2]);
+    upper_y = teeth_y_teeth_sep(upper_min_idx,[1 2]);
 
     % Plot Image
-    for teeth = 1:numb_of_teeth
-
-        % Find min intensity
-        [upper_min_val, upper_min_idx] = min(upper_y_int_mean_plot);
-        [lower_min_val, lower_min_idx] = min(lower_y_int_mean_plot);
-
-        % Plot Intensity / Teeth limit
+    for upper_tooth = 1:size(upper_x,1)
         figure(1)
         hold on
-        plot(upper_x_teeth_sep_plot(upper_min_idx,:),...
-             upper_y_teeth_sep_plot(upper_min_idx,:),...
-             'm-','LineWidth',2)
-        hold on
-        plot(lower_x_teeth_sep_plot(lower_min_idx,:),...
-             lower_y_teeth_sep_plot(lower_min_idx,:),...
+        plot(upper_x(upper_tooth,:),...
+             upper_y(upper_tooth,:),...
              'g-','LineWidth',2)
-
-        upper_clip_start = upper_min_idx - upper_min_dist;
-        upper_clip_end = upper_min_idx + upper_min_dist;
-
-        if (1 > upper_clip_start)
-            upper_clip_start = 1;
-        end
-
-        if (upper_clip_end > size(upper_y_int_mean_plot))
-            upper_clip_end = size(upper_y_int_mean_plot);
-        end
-
-        % Remove it for next iteration
-        upper_y_int_mean_plot(upper_clip_start:upper_clip_end) = [];
-        upper_x_teeth_sep_plot(upper_clip_start:upper_clip_end,:) = [];
-        upper_y_teeth_sep_plot(upper_clip_start:upper_clip_end,:) = [];
-
-        lower_clip_start = lower_min_idx - lower_min_dist;
-        lower_clip_end = lower_min_idx + lower_min_dist;
-
-        if (1 > lower_clip_start)
-            lower_clip_start = 1;
-        end
-
-        if (lower_clip_end > size(lower_y_int_mean_plot))
-            lower_clip_end = size(lower_y_int_mean_plot);
-        end
-
-        % Remove it for next iteration
-        lower_y_int_mean_plot(lower_clip_start:lower_clip_end) = [];
-        lower_x_teeth_sep_plot(lower_clip_start:lower_clip_end,:) = [];
-        lower_y_teeth_sep_plot(lower_clip_start:lower_clip_end,:) = [];
     end
+
+    % Upper - Massage Data for plotting
+    lower_int_mean_plot = lower_int_mean(lower_min_idx);
+    lower_x = teeth_x_teeth_sep(lower_min_idx,[2 3]);
+    lower_y = teeth_y_teeth_sep(lower_min_idx,[2 3]);
+
+    % Plot Image
+    for lower_tooth = 1:size(lower_x,1)
+        figure(1)
+        hold on
+        plot(lower_x(lower_tooth,:),...
+             lower_y(lower_tooth,:),...
+             'c-','LineWidth',2)
+    end
+ 
 end         % All images Iteration
