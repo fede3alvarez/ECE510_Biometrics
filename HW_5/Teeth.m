@@ -32,20 +32,11 @@ min_dist = 10;
 window_factor = 10;
 window_overlap = 0;
 
+% Other Useful parameters
 c = 1;
-gauss = 1;
 horiz_sample_pts = 150;
-horiz_sample_edge = 0.4;
-
-%---------------------------------------
-% Parameters for Individual 
-%   Teeth calculation
-%---------------------------------------
-upper_min_dist = 70;
 numb_of_teeth = 6;
 
-lower_min_dist = 15;
-lower_numb_of_teeth = 7;
 
 for m = 1:size(Available_images,1)
 
@@ -56,21 +47,14 @@ for m = 1:size(Available_images,1)
     % In this case, it is in Grayscale
     current_image = Available_images(m,:);
     [Image_A, Map_A] = imread(current_image);
-    Image_A = imgaussfilt(Image_A,3);  
-    % Image_A = imgaussfilt(Image_A,3);  
-    
+
+    Image_A = imgaussfilt(Image_A,3);      
     [y_im, x_im] = size(Image_A);
-    [y_map, x_map] = size(Map_A);
   
     % Plot Image
     figure(f_figure)
-    %Fix Matlab axis if getpts is needed, it is accurate
-    % hax = axes('Parent', figure(f_figure));
-    % axis(hax,'manual');
     imshow(Image_A);
     title(current_image);
-
-    % f_figure = f_figure + 1;
 
 
     %--------------------------------------------
@@ -207,10 +191,10 @@ for m = 1:size(Available_images,1)
     
     end
 
-    % Plot Image
-    figure(1)
-    hold on
-    plot(x_gauss,y_gauss,'m*')
+    % % Plot Image
+    % figure(1)
+    % hold on
+    % plot(x_gauss,y_gauss,'m*')
 
     %--------------------------------------------
     % Step 4: 2nd Degree Polynomial
@@ -422,10 +406,6 @@ for m = 1:size(Available_images,1)
         lower_teeth_x_sweep = lower_teeth_x_sweep(lower_teeth_y_sweep > 0); 
         lower_teeth_y_sweep = lower_teeth_y_sweep(lower_teeth_y_sweep > 0); 
 
-        % % Round Edges - No trimming
-        % % Ignore top or bottom pixels due to noise 
-        % teeth_low_lim = round(1); 
-        % teeth_high_lim = round(size(teeth_x_sweep,2)*1);
         %------------------------------------------------------------------
 
         %------------------------------------------------------------------
@@ -449,17 +429,8 @@ for m = 1:size(Available_images,1)
         end
             
         % Smooth Intensity
-        % upper_y_int_mean = smoothn(upper_y_int_mean);
-        % lower_y_int_mean = smoothn(lower_y_int_mean);
-        % 
-        % upper_y_int_mean = smoothn(upper_y_int_mean);
-        % lower_y_int_mean = smoothn(lower_y_int_mean);
-        % 
-        % upper_y_int_mean = smoothn(upper_y_int_mean);
-        % lower_y_int_mean = smoothn(lower_y_int_mean);
-        % 
-        % upper_y_int_mean = smoothn(upper_y_int_mean);
-        % lower_y_int_mean = smoothn(lower_y_int_mean);
+        upper_y_int_mean = smoothn(upper_y_int_mean);
+        lower_y_int_mean = smoothn(lower_y_int_mean);
 
         % Store Data
         upper_int_mean = [upper_int_mean; upper_y_int_mean];
@@ -471,10 +442,10 @@ for m = 1:size(Available_images,1)
     % Step 7.1: Teeth Separation & Plotting
     %--------------------------------------------
 
-    figure(1)
-    hold on
+    figure(2)
     plot(upper_int_mean,'g-','LineWidth',2)
-    hold on
+
+    figure(3)
     plot(lower_int_mean,'m-','LineWidth',2)
 
     % Find the local minima
@@ -512,5 +483,23 @@ for m = 1:size(Available_images,1)
              lower_y(lower_tooth,:),...
              'c-','LineWidth',2)
     end
- 
+
+    figure(2)
+    plot(upper_int_mean,'g-','LineWidth',2)
+    hold on
+    plot(teeth_x_teeth_sep(upper_min_idx,2),...
+         upper_int_mean(upper_min_idx),...
+         'ro','LineWidth',2)
+    grid on
+    title("Upper Teeth Mean Intensity")
+
+    figure(3)
+    plot(lower_int_mean,'c-','LineWidth',2)
+    hold on
+    plot(teeth_x_teeth_sep(lower_min_idx,2),...
+         lower_int_mean(lower_min_idx),...
+         'ro','LineWidth',2)
+    grid on
+    title("Loweer Teeth Mean Intensity")
+
 end         % All images Iteration
