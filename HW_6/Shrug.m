@@ -68,7 +68,7 @@ shoulders = zeros(num_of_frames,2);
 %  Iterate frame per frame
 %---------------------------------------
 
-for frame_num = 788:num_of_frames
+for frame_num = 1:num_of_frames
 
     % Initialize frame specific variables
     %-------------------------------------
