@@ -1,3 +1,6 @@
 [submodule "Term_Project/--force"]
 	path = Term_Project/--force
 	url = git@github.com:microsoft/DigiFace1M.git
+[submodule "HW_7_Term_Project/DigiFace1M"]
+	path = HW_7_Term_Project/DigiFace1M
+	url = git@github.com:microsoft/DigiFace1M.git
