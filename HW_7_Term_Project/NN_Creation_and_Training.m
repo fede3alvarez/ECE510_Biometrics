@@ -33,14 +33,8 @@ dataset = imageDatastore(dataset_folder,...
 neural_network = googlenet;
 analyzeNetwork(neural_network);
 
-% Get Input size of 1st Layer
-input_layer_size = neural_network.Layers(1).InputSize;
 
-% Update Layers as needed
-layer_graph = layerGraph(neural_network);
-
-feature_learner = neural_network.Layers(142);
-output_classifier = neural_network.Layers(144);
+% Update Neural Template for purpose (i.e. Face Recognition)
 
 number_of_classes = numel(categories(training_dataset.Labels));
 
@@ -51,23 +45,26 @@ new_feature_learner = fullyConnectedLayer(number_of_classes, ...
 
 new_classifier_layer = classificationLayer("Name", "Face Classifier");
 
+
+% Update Layers
+layer_graph = layerGraph(neural_network);
+
+% Update Layer 142 to target Facial Features
+feature_learner = neural_network.Layers(142);
 layer_graph = replaceLayer(layer_graph, feature_learner.Name, new_feature_learner);
+
+% Update Layer 144 to target Facial Classification
+output_classifier = neural_network.Layers(144);
 layer_graph = replaceLayer(layer_graph, output_classifier.Name, new_classifier_layer);
 
 analyzeNetwork(layer_graph);
 
+
 %---------------------------------------
-%  Clean-up Image
+%  Resize-up Image
 %---------------------------------------
-% 
-% pixel_range = [-30 30];
-% scale_range = [0.9 1.1];
-% 
-% image_augmented = imageDataAugmenter('RandXReflection', true,...
-%                                    'RandXTranslation', pixel_range,...
-%                                    'RandYTranslation', pixel_range,...
-%                                    'RandXScale', scale_range,...
-%                                    'RandyScale', scale_range);
+% Get Input size of 1st Layer
+input_layer_size = neural_network.Layers(1).InputSize;
 
 % Resize Image to fit within Neural Netwrok 
 augmented_training_image = augmentedImageDatastore(...
@@ -77,6 +74,7 @@ augmented_training_image = augmentedImageDatastore(...
 augmented_validation_image = augmentedImageDatastore(...
                                         input_layer_size(1:2), ...
                                         validation_dataset);
+
 
 %---------------------------------------
 %  Train Network 
@@ -101,4 +99,5 @@ neural_network = trainNetwork(augmented_training_image, ...
                               layer_graph, ...
                               training_options);
 
+% Save Neural Network for laater use
 save neural_network;
