@@ -99,5 +99,5 @@ neural_network = trainNetwork(augmented_training_image, ...
                               layer_graph, ...
                               training_options);
 
-% Save Neural Network for laater use
+% Save Neural Network for later use
 save neural_network;
